@@ -1,6 +1,6 @@
 /***
  * ASM examples: examples showing how ASM can be used
- * Copyright (c) 2000-2007 INRIA, France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,15 +27,15 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
+import java.io.FileOutputStream;
+import java.io.PrintStream;
+
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
-
-import java.io.FileOutputStream;
-import java.io.PrintStream;
 
 /**
  * @author Eric Bruneton
@@ -45,7 +45,7 @@ public class Helloworld extends ClassLoader implements Opcodes {
     public static void main(final String args[]) throws Exception {
 
         // Generates the bytecode corresponding to the following Java class:
-        // 
+        //
         // public class Example {
         // public static void main (String[] args) {
         // System.out.println("Hello world!");
@@ -104,7 +104,7 @@ public class Helloworld extends ClassLoader implements Opcodes {
         fos.close();
 
         Helloworld loader = new Helloworld();
-        Class exampleClass = loader.defineClass("Example", code, 0, code.length);
+        Class<?> exampleClass = loader.defineClass("Example", code, 0, code.length);
 
         // uses the dynamically generated class to print 'Helloworld'
         exampleClass.getMethods()[0].invoke(null, new Object[] { null });

@@ -1,6 +1,6 @@
-/**
+/***
  * ASM: a very small and fast Java bytecode manipulation framework
- * Copyright (c) 2000-2007 INRIA, France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,26 +27,74 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.objectweb.asm.util;
+package org.objectweb.asm.tree;
 
 import java.util.Map;
 
+import org.objectweb.asm.Handle;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+
 /**
- * An attribute that can print eadable representation of the attribute.
- * 
- * Implementation should construct readable output from an attribute data
- * structures for current attribute state. Such representation could be used in
- * unit test assertions.
- * 
- * @author Eugene Kuleshov
+ * A node that represents an invokedynamic instruction.
+ *
+ * @author Remi Forax
  */
-public interface Traceable {
+public class InvokeDynamicInsnNode extends AbstractInsnNode {
 
     /**
-     * Build a human readable representation of the attribute.
-     * 
-     * @param buf A buffer used for printing Java code.
-     * @param labelNames map of label instances to their names.
+     * Invokedynamic name.
      */
-    void trace(StringBuffer buf, Map labelNames);
+    public String name;
+
+    /**
+     * Invokedynamic descriptor.
+     */
+    public String desc;
+
+    /**
+     * Bootstrap method
+     */
+    public Handle bsm;
+
+    /**
+     * Bootstrap constant arguments
+     */
+    public Object[] bsmArgs;
+
+    /**
+     * Constructs a new {@link InvokeDynamicInsnNode}.
+     *
+     * @param name invokedynamic name.
+     * @param desc invokedynamic descriptor (see {@link org.objectweb.asm.Type}).
+     * @param bsm the bootstrap method.
+     * @param bsmArgs the boostrap constant arguments.
+     */
+    public InvokeDynamicInsnNode(
+        final String name,
+        final String desc,
+        final Handle bsm,
+        final Object... bsmArgs)
+    {
+        super(Opcodes.INVOKEDYNAMIC);
+        this.name = name;
+        this.desc = desc;
+        this.bsm = bsm;
+        this.bsmArgs = bsmArgs;
+    }
+
+    @Override
+    public int getType() {
+        return INVOKE_DYNAMIC_INSN;
+    }
+
+    @Override
+    public void accept(final MethodVisitor mv) {
+        mv.visitInvokeDynamicInsn(name, desc, bsm, bsmArgs);
+    }
+
+    @Override
+    public AbstractInsnNode clone(final Map<LabelNode, LabelNode> labels) {
+        return new InvokeDynamicInsnNode(name, desc, bsm, bsmArgs);
+    }
 }

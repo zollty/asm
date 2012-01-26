@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,16 +40,16 @@ import java.security.ProtectionDomain;
 import junit.framework.TestSuite;
 
 import org.objectweb.asm.AbstractTest;
-import org.objectweb.asm.ClassAdapter;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.util.TraceClassVisitor;
 
 /**
  * LocalVariablesSorter tests.
- * 
+ *
  * @author Eric Bruneton
  */
 public class LocalVariablesSorterTest2 extends AbstractTest {
@@ -62,7 +62,7 @@ public class LocalVariablesSorterTest2 extends AbstractTest {
             public byte[] transform(
                 final ClassLoader loader,
                 final String className,
-                final Class classBeingRedefined,
+                final Class<?> classBeingRedefined,
                 final ProtectionDomain domain,
                 final byte[] classFileBuffer)
                     throws IllegalClassFormatException
@@ -80,8 +80,9 @@ public class LocalVariablesSorterTest2 extends AbstractTest {
     static byte[] transformClass(final byte[] clazz) {
         ClassReader cr = new ClassReader(clazz);
         ClassWriter cw = new ClassWriter(0);
-        cr.accept(new ClassAdapter(cw) {
+        cr.accept(new ClassVisitor(Opcodes.ASM4, cw) {
 
+            @Override
             public MethodVisitor visitMethod(
                 final int access,
                 final String name,
@@ -106,6 +107,7 @@ public class LocalVariablesSorterTest2 extends AbstractTest {
         return new LocalVariablesSorterTest2().getSuite();
     }
 
+    @Override
     public void test() throws Exception {
         try {
             Class.forName(n, true, getClass().getClassLoader());

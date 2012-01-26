@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,10 +37,11 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.util.TraceMethodVisitor;
+import org.objectweb.asm.util.Textifier;
 
 /**
  * JsrInlinerTest
- * 
+ *
  * @author Eugene Kuleshov, Niko Matsakis, Eric Bruneton
  */
 public class JSRInlinerAdapterUnitTest extends TestCase {
@@ -49,16 +50,19 @@ public class JSRInlinerAdapterUnitTest extends TestCase {
     private MethodNode exp;
     private MethodVisitor current;
 
+    @Override
     protected void setUp() throws Exception {
         super.setUp();
         jsr = new JSRInlinerAdapter(null, 0, "m", "()V", null, null) {
+            @Override
             public void visitEnd() {
                 System.err.println("started w/ method:" + name);
-                TraceMethodVisitor mv = new TraceMethodVisitor();
+                Textifier t = new Textifier();
+                TraceMethodVisitor mv = new TraceMethodVisitor(t);
                 for (int i = 0; i < instructions.size(); ++i) {
                     instructions.get(i).accept(mv);
                     System.err.print(Integer.toString(i + 100000).substring(1));
-                    System.err.print(" : " + mv.text.get(i));
+                    System.err.print(" : " + t.text.get(i));
                 }
                 super.visitEnd();
                 System.err.println("finished w/ method:" + name);
@@ -182,7 +186,7 @@ public class JSRInlinerAdapterUnitTest extends TestCase {
         byte[] b = cw.toByteArray();
         try {
             TestClassLoader loader = new TestClassLoader();
-            Class c = loader.defineClass("C", b);
+            Class<?> c = loader.defineClass("C", b);
             c.newInstance();
         } catch (Throwable t) {
             fail(t.getMessage());
@@ -192,7 +196,7 @@ public class JSRInlinerAdapterUnitTest extends TestCase {
 
     static class TestClassLoader extends ClassLoader {
 
-        public Class defineClass(final String name, final byte[] b) {
+        public Class<?> defineClass(final String name, final byte[] b) {
             return defineClass(name, b, 0, b.length);
         }
     }
@@ -200,7 +204,7 @@ public class JSRInlinerAdapterUnitTest extends TestCase {
     /**
      * Tests a method which has the most basic <code>try{}finally</code> form
      * imaginable:
-     * 
+     *
      * <pre>
      *   public void a() {
      *     int a = 0;
@@ -314,7 +318,7 @@ public class JSRInlinerAdapterUnitTest extends TestCase {
 
     /**
      * Tests a method which has an if/else-if w/in the finally clause:
-     * 
+     *
      * <pre>
      *   public void a() {
      *     int a = 0;
@@ -455,7 +459,7 @@ public class JSRInlinerAdapterUnitTest extends TestCase {
 
     /**
      * Tests a simple nested finally:
-     * 
+     *
      * <pre>
      * public void a1() {
      *   int a = 0;
@@ -638,11 +642,11 @@ public class JSRInlinerAdapterUnitTest extends TestCase {
     /**
      * This tests a subroutine which has no ret statement, but ends in a
      * "return" instead.
-     * 
+     *
      * We structure this as a try/finally with a break in the finally. Because
      * the while loop is infinite, it's clear from the byte code that the only
      * path which reaches the RETURN instruction is through the subroutine.
-     * 
+     *
      * <pre>
      * public void a1() {
      *   int a = 0;
@@ -765,12 +769,12 @@ public class JSRInlinerAdapterUnitTest extends TestCase {
     /**
      * This tests a subroutine which has no ret statement, but ends in a
      * "return" instead.
-     * 
+     *
      * <pre>
      *   JSR L0
      * L0:
-     *   ASTORE 0 
-     *   RETURN 
+     *   ASTORE 0
+     *   RETURN
      * </pre>
      */
     public void testSubroutineWithNoRet2() {
@@ -811,11 +815,11 @@ public class JSRInlinerAdapterUnitTest extends TestCase {
      * This tests a subroutine which has no ret statement, but instead exits
      * implicitely by branching to code which is not part of the subroutine.
      * (Sadly, this is legal)
-     * 
+     *
      * We structure this as a try/finally in a loop with a break in the finally.
      * The loop is not trivially infinite, so the RETURN statement is reachable
      * both from the JSR subroutine and from the main entry point.
-     * 
+     *
      * <pre>
      * public void a1() {
      *   int a = 0;
@@ -951,7 +955,7 @@ public class JSRInlinerAdapterUnitTest extends TestCase {
     /**
      * Tests a nested try/finally with implicit exit from one subroutine to the
      * other subroutine. Equivalent to the following java code:
-     * 
+     *
      * <pre>
      * void m(boolean b) {
      *   try {
@@ -968,7 +972,7 @@ public class JSRInlinerAdapterUnitTest extends TestCase {
      *   }
      * }
      * </pre>
-     * 
+     *
      * This example is from the paper, "Subroutine Inlining and Bytecode
      * Abstraction to Simplify Static and Dynamic Analysis" by Cyrille Artho and
      * Armin Biere.
@@ -1215,7 +1219,7 @@ public class JSRInlinerAdapterUnitTest extends TestCase {
      * branch to a common set of code which returns from the method. This code
      * is not reachable except through these subroutines, and since they do not
      * invoke each other, it must be copied into both of them.
-     * 
+     *
      * I don't believe this can be represented in Java.
      */
     public void testCommonCodeWhichMustBeDuplicated() {
@@ -1323,7 +1327,7 @@ public class JSRInlinerAdapterUnitTest extends TestCase {
     /**
      * This tests a simple subroutine where the control flow jumps back and
      * forth between the subroutine and the caller.
-     * 
+     *
      * This would not normally be produced by a java compiler.
      */
     public void testInterleavedCode() {
@@ -1423,7 +1427,7 @@ public class JSRInlinerAdapterUnitTest extends TestCase {
      * Tests a nested try/finally with implicit exit from one subroutine to the
      * other subroutine, and with a surrounding try/catch thrown in the mix.
      * Equivalent to the following java code:
-     * 
+     *
      * <pre>
      * void m(int b) {
      *   try {
@@ -1438,7 +1442,7 @@ public class JSRInlinerAdapterUnitTest extends TestCase {
      *           if (b) break;
      *         }
      *       }
-     *     } 
+     *     }
      *   } catch (Exception e) {
      *     b += 3;
      *     return;
@@ -1732,7 +1736,7 @@ public class JSRInlinerAdapterUnitTest extends TestCase {
 
     /**
      * Tests a method which has line numbers and local variable declarations.
-     * 
+     *
      * <pre>
      *   public void a() {
      * 1    int a = 0;
@@ -1871,12 +1875,13 @@ public class JSRInlinerAdapterUnitTest extends TestCase {
     }
 
     private String getText(final MethodNode mn) {
-        TraceMethodVisitor tmv = new TraceMethodVisitor(null);
+        Textifier tv = new Textifier();
+        TraceMethodVisitor tmv = new TraceMethodVisitor(tv);
         mn.accept(tmv);
 
         StringBuffer sb = new StringBuffer();
-        for (int i = 0; i < tmv.text.size(); i++) {
-            sb.append(tmv.text.get(i));
+        for (int i = 0; i < tv.text.size(); i++) {
+            sb.append(tv.text.get(i));
         }
         return sb.toString();
     }

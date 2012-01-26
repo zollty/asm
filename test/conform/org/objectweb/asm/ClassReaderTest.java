@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,11 +31,9 @@ package org.objectweb.asm;
 
 import junit.framework.TestSuite;
 
-import org.objectweb.asm.commons.EmptyVisitor;
-
 /**
  * ClassReader tests.
- * 
+ *
  * @author Eric Bruneton
  */
 public class ClassReaderTest extends AbstractTest {
@@ -44,7 +42,87 @@ public class ClassReaderTest extends AbstractTest {
         return new ClassReaderTest().getSuite();
     }
 
+    @Override
     public void test() throws Exception {
-        new ClassReader(is).accept(new EmptyVisitor(), 0);
+        new ClassReader(is).accept(new ClassVisitor(Opcodes.ASM4) {
+
+            AnnotationVisitor av = new AnnotationVisitor(Opcodes.ASM4) {
+
+                @Override
+                public AnnotationVisitor visitAnnotation(
+                    String name,
+                    String desc)
+                {
+                    return this;
+                }
+
+                @Override
+                public AnnotationVisitor visitArray(String name) {
+                    return this;
+                }
+            };
+
+            @Override
+            public AnnotationVisitor visitAnnotation(
+                String desc,
+                boolean visible)
+            {
+                return av;
+            }
+
+            @Override
+            public FieldVisitor visitField(
+                int access,
+                String name,
+                String desc,
+                String signature,
+                Object value)
+            {
+                return new FieldVisitor(Opcodes.ASM4) {
+
+                    @Override
+                    public AnnotationVisitor visitAnnotation(
+                        String desc,
+                        boolean visible)
+                    {
+                        return av;
+                    }
+                };
+            }
+
+            @Override
+            public MethodVisitor visitMethod(
+                int access,
+                String name,
+                String desc,
+                String signature,
+                String[] exceptions)
+            {
+                return new MethodVisitor(Opcodes.ASM4) {
+
+                    @Override
+                    public AnnotationVisitor visitAnnotationDefault() {
+                        return av;
+                    }
+
+                    @Override
+                    public AnnotationVisitor visitAnnotation(
+                        String desc,
+                        boolean visible)
+                    {
+                        return av;
+                    }
+
+                    @Override
+                    public AnnotationVisitor visitParameterAnnotation(
+                        int parameter,
+                        String desc,
+                        boolean visible)
+                    {
+                        return av;
+                    }
+                };
+            }
+        }, 0);
     }
 }

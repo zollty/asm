@@ -1,6 +1,6 @@
 /***
  * ASM examples: examples showing how ASM can be used
- * Copyright (c) 2000-2007 INRIA, France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,20 +27,19 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
+import java.io.FileOutputStream;
+import java.io.PrintWriter;
+
 import org.objectweb.asm.Attribute;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.ClassAdapter;
+import org.objectweb.asm.ByteVector;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.ByteVector;
 import org.objectweb.asm.util.TraceClassVisitor;
-
-import java.io.FileOutputStream;
-import java.io.PrintWriter;
 
 /**
  * @author Eric Bruneton
@@ -57,8 +56,11 @@ public class Attributes extends ClassLoader {
 
         // stores the adapted class on disk
         FileOutputStream fos = new FileOutputStream("CommentAttribute.class.new");
-        fos.write(b);
-        fos.close();
+        try {
+            fos.write(b);
+        } finally {
+            fos.close();
+        }
 
         // "disassembles" the adapted class
         cr = new ClassReader(b);
@@ -67,12 +69,13 @@ public class Attributes extends ClassLoader {
     }
 }
 
-class AddCommentClassAdapter extends ClassAdapter implements Opcodes {
+class AddCommentClassAdapter extends ClassVisitor implements Opcodes {
 
     public AddCommentClassAdapter(final ClassVisitor cv) {
-        super(cv);
+        super(Opcodes.ASM4, cv);
     }
 
+    @Override
     public void visit(
         final int version,
         final int access,
@@ -85,6 +88,7 @@ class AddCommentClassAdapter extends ClassAdapter implements Opcodes {
         visitAttribute(new CommentAttribute("this is a class comment"));
     }
 
+    @Override
     public FieldVisitor visitField(
         final int access,
         final String name,
@@ -97,6 +101,7 @@ class AddCommentClassAdapter extends ClassAdapter implements Opcodes {
         return fv;
     }
 
+    @Override
     public MethodVisitor visitMethod(
         final int access,
         final String name,
@@ -129,10 +134,12 @@ class CommentAttribute extends Attribute {
         return comment;
     }
 
+    @Override
     public boolean isUnknown() {
         return false;
     }
 
+    @Override
     protected Attribute read(
         final ClassReader cr,
         final int off,
@@ -144,6 +151,7 @@ class CommentAttribute extends Attribute {
         return new CommentAttribute(cr.readUTF8(off, buf));
     }
 
+    @Override
     protected ByteVector write(
         final ClassWriter cw,
         final byte[] code,

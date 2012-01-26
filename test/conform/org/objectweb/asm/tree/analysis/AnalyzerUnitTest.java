@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,29 +30,33 @@
 package org.objectweb.asm.tree.analysis;
 
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriterComputeMaxsUnitTest;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.commons.EmptyVisitor;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.MethodNode;
 
 /**
  * Analyzer unit tests for methods with JSR instructions.
- * 
+ *
  * @author Eric Bruneton
  */
 public class AnalyzerUnitTest extends ClassWriterComputeMaxsUnitTest {
 
+    @Override
     protected boolean isComputeMaxs() {
         return false;
     }
 
+    @Override
     protected void assertMaxs(final int maxStack, final int maxLocals) {
         mv.visitMaxs(maxStack, maxLocals);
         mv.visitEnd();
         cw.visitEnd();
         byte[] b = cw.toByteArray();
         ClassReader cr = new ClassReader(b);
-        cr.accept(new EmptyVisitor() {
+        cr.accept(new ClassVisitor(Opcodes.ASM4) {
+            @Override
             public MethodVisitor visitMethod(
                 final int access,
                 final String name,
@@ -67,10 +71,11 @@ public class AnalyzerUnitTest extends ClassWriterComputeMaxsUnitTest {
                             signature,
                             exceptions)
                     {
+                        @Override
                         public void visitEnd() {
-                            Analyzer a = new Analyzer(new BasicInterpreter());
+                            Analyzer<BasicValue> a = new Analyzer<BasicValue>(new BasicInterpreter());
                             try {
-                                Frame[] frames = a.analyze("C", this);
+                                Frame<BasicValue>[] frames = a.analyze("C", this);
                                 int mStack = 0;
                                 int mLocals = 0;
                                 for (int i = 0; i < frames.length; ++i) {
@@ -89,20 +94,21 @@ public class AnalyzerUnitTest extends ClassWriterComputeMaxsUnitTest {
                         }
                     };
                 } else {
-                    return new EmptyVisitor();
+                    return null;
                 }
             }
         }, 0);
 
         try {
             TestClassLoader loader = new TestClassLoader();
-            Class c = loader.defineClass("C", b);
+            Class<?> c = loader.defineClass("C", b);
             c.newInstance();
         } catch (Throwable t) {
             fail(t.getMessage());
         }
     }
 
+    @Override
     protected void assertGraph(final String graph) {
     }
 }

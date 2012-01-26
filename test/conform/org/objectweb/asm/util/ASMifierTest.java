@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,23 +44,19 @@ import org.codehaus.janino.IClassLoader;
 import org.codehaus.janino.Parser;
 import org.codehaus.janino.Scanner;
 import org.codehaus.janino.UnitCompiler;
-
 import org.objectweb.asm.AbstractTest;
 import org.objectweb.asm.Attribute;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.attrs.CodeComment;
 import org.objectweb.asm.attrs.Comment;
-import org.objectweb.asm.util.ASMifierClassVisitor;
 
 /**
  * ASMifier tests.
- * 
+ *
  * @author Eugene Kuleshov
  * @author Eric Bruneton
  */
 public class ASMifierTest extends AbstractTest {
-
-    public static final Compiler COMPILER = new Compiler();
 
     public static final TestClassLoader LOADER = new TestClassLoader();
 
@@ -68,6 +64,7 @@ public class ASMifierTest extends AbstractTest {
         return new ASMifierTest().getSuite();
     }
 
+    @Override
     public void test() throws Exception {
         ClassReader cr = new ClassReader(is);
 
@@ -76,14 +73,16 @@ public class ASMifierTest extends AbstractTest {
         }
 
         StringWriter sw = new StringWriter();
-        ASMifierClassVisitor cv = new ASMifierClassVisitor(new PrintWriter(sw));
+        TraceClassVisitor cv = new TraceClassVisitor(null,
+                new ASMifier(),
+                new PrintWriter(sw));
         cr.accept(cv, new Attribute[] { new Comment(), new CodeComment() }, 0);
 
         String generated = sw.toString();
 
         byte[] generatorClassData;
         try {
-            generatorClassData = COMPILER.compile(n, generated);
+            generatorClassData = Compiler.compile(n, generated);
         } catch (Exception ex) {
             System.err.println(generated);
             System.err.println("------------------");
@@ -95,7 +94,7 @@ public class ASMifierTest extends AbstractTest {
             nd = "asm." + nd;
         }
 
-        Class c = LOADER.defineClass(nd, generatorClassData);
+        Class<?> c = LOADER.defineClass(nd, generatorClassData);
         Method m = c.getMethod("dump", new Class[0]);
         byte[] b = (byte[]) m.invoke(null, new Object[0]);
 
@@ -104,7 +103,7 @@ public class ASMifierTest extends AbstractTest {
 
     public static class TestClassLoader extends ClassLoader {
 
-        public Class defineClass(final String name, final byte[] b) {
+        public Class<?> defineClass(final String name, final byte[] b) {
             return defineClass(name, b, 0, b.length);
         }
     }
@@ -113,7 +112,7 @@ public class ASMifierTest extends AbstractTest {
 
         final static IClassLoader CL = new ClassLoaderIClassLoader(new URLClassLoader(new URL[0]));
 
-        public byte[] compile(final String name, final String source)
+        public static byte[] compile(final String name, final String source)
                 throws Exception
         {
             Parser p = new Parser(new Scanner(name, new StringReader(source)));

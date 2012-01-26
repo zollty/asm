@@ -1,6 +1,6 @@
 /***
  * ASM examples: examples showing how ASM can be used
- * Copyright (c) 2000-2007 INRIA, France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,26 +35,22 @@ import java.util.Map;
 import java.util.Set;
 
 import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.Attribute;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureReader;
 import org.objectweb.asm.signature.SignatureVisitor;
 
 /**
  * DependencyVisitor
- * 
+ *
  * @author Eugene Kuleshov
  */
-public class DependencyVisitor implements
-        AnnotationVisitor,
-        SignatureVisitor,
-        ClassVisitor,
-        FieldVisitor,
-        MethodVisitor
+public class DependencyVisitor extends ClassVisitor
 {
     Set<String> packages = new HashSet<String>();
 
@@ -70,8 +66,13 @@ public class DependencyVisitor implements
         return packages;
     }
 
+    public DependencyVisitor() {
+        super(Opcodes.ASM4);
+    }
+
     // ClassVisitor
 
+    @Override
     public void visit(
         final int version,
         final int access,
@@ -97,17 +98,16 @@ public class DependencyVisitor implements
         }
     }
 
+    @Override
     public AnnotationVisitor visitAnnotation(
         final String desc,
         final boolean visible)
     {
         addDesc(desc);
-        return this;
+        return new AnnotationDependencyVisitor();
     }
 
-    public void visitAttribute(final Attribute attr) {
-    }
-
+    @Override
     public FieldVisitor visitField(
         final int access,
         final String name,
@@ -123,9 +123,10 @@ public class DependencyVisitor implements
         if (value instanceof Type) {
             addType((Type) value);
         }
-        return this;
+        return new FieldDependencyVisitor();
     }
 
+    @Override
     public MethodVisitor visitMethod(
         final int access,
         final String name,
@@ -139,246 +140,184 @@ public class DependencyVisitor implements
             addSignature(signature);
         }
         addInternalNames(exceptions);
-        return this;
+        return new MethodDependencyVisitor();
     }
 
-    public void visitSource(final String source, final String debug) {
-    }
+    class AnnotationDependencyVisitor extends AnnotationVisitor {
 
-    public void visitInnerClass(
-        final String name,
-        final String outerName,
-        final String innerName,
-        final int access)
-    {
-        // addName( outerName);
-        // addName( innerName);
-    }
+        public AnnotationDependencyVisitor() {
+            super(Opcodes.ASM4);
+        }
 
-    public void visitOuterClass(
-        final String owner,
-        final String name,
-        final String desc)
-    {
-        // addName(owner);
-        // addMethodDesc(desc);
-    }
+        @Override
+        public void visit(final String name, final Object value) {
+            if (value instanceof Type) {
+                addType((Type) value);
+            }
+        }
 
-    // MethodVisitor
+        @Override
+        public void visitEnum(
+            final String name,
+            final String desc,
+            final String value)
+        {
+            addDesc(desc);
+        }
 
-    public AnnotationVisitor visitParameterAnnotation(
-        final int parameter,
-        final String desc,
-        final boolean visible)
-    {
-        addDesc(desc);
-        return this;
-    }
+        @Override
+        public AnnotationVisitor visitAnnotation(
+            final String name,
+            final String desc)
+        {
+            addDesc(desc);
+            return this;
+        }
 
-    public void visitTypeInsn(final int opcode, final String type) {
-        addType(Type.getObjectType(type));
-    }
-
-    public void visitFieldInsn(
-        final int opcode,
-        final String owner,
-        final String name,
-        final String desc)
-    {
-        addInternalName(owner);
-        addDesc(desc);
-    }
-
-    public void visitMethodInsn(
-        final int opcode,
-        final String owner,
-        final String name,
-        final String desc)
-    {
-        addInternalName(owner);
-        addMethodDesc(desc);
-    }
-
-    public void visitLdcInsn(final Object cst) {
-        if (cst instanceof Type) {
-            addType((Type) cst);
+        @Override
+        public AnnotationVisitor visitArray(final String name) {
+            return this;
         }
     }
 
-    public void visitMultiANewArrayInsn(final String desc, final int dims) {
-        addDesc(desc);
-    }
+    class FieldDependencyVisitor extends FieldVisitor {
 
-    public void visitLocalVariable(
-        final String name,
-        final String desc,
-        final String signature,
-        final Label start,
-        final Label end,
-        final int index)
-    {
-        addTypeSignature(signature);
-    }
+        public FieldDependencyVisitor() {
+            super(Opcodes.ASM4);
+        }
 
-    public AnnotationVisitor visitAnnotationDefault() {
-        return this;
-    }
-
-    public void visitCode() {
-    }
-
-    public void visitFrame(
-        final int type,
-        final int nLocal,
-        final Object[] local,
-        final int nStack,
-        final Object[] stack)
-    {
-    }
-
-    public void visitInsn(final int opcode) {
-    }
-
-    public void visitIntInsn(final int opcode, final int operand) {
-    }
-
-    public void visitVarInsn(final int opcode, final int var) {
-    }
-
-    public void visitJumpInsn(final int opcode, final Label label) {
-    }
-
-    public void visitLabel(final Label label) {
-    }
-
-    public void visitIincInsn(final int var, final int increment) {
-    }
-
-    public void visitTableSwitchInsn(
-        final int min,
-        final int max,
-        final Label dflt,
-        final Label[] labels)
-    {
-    }
-
-    public void visitLookupSwitchInsn(
-        final Label dflt,
-        final int[] keys,
-        final Label[] labels)
-    {
-    }
-
-    public void visitTryCatchBlock(
-        final Label start,
-        final Label end,
-        final Label handler,
-        final String type)
-    {
-        if (type != null) {
-            addInternalName(type);
+        @Override
+        public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+            addDesc(desc);
+            return new AnnotationDependencyVisitor();
         }
     }
 
-    public void visitLineNumber(final int line, final Label start) {
-    }
+    class MethodDependencyVisitor extends MethodVisitor {
 
-    public void visitMaxs(final int maxStack, final int maxLocals) {
-    }
+        public MethodDependencyVisitor() {
+            super(Opcodes.ASM4);
+        }
 
-    // AnnotationVisitor
+        @Override
+        public AnnotationVisitor visitAnnotationDefault() {
+            return new AnnotationDependencyVisitor();
+        }
 
-    public void visit(final String name, final Object value) {
-        if (value instanceof Type) {
-            addType((Type) value);
+        @Override
+        public AnnotationVisitor visitAnnotation(
+            final String desc,
+            final boolean visible)
+        {
+            addDesc(desc);
+            return new AnnotationDependencyVisitor();
+        }
+
+        @Override
+        public AnnotationVisitor visitParameterAnnotation(
+            final int parameter,
+            final String desc,
+            final boolean visible)
+        {
+            addDesc(desc);
+            return new AnnotationDependencyVisitor();
+        }
+
+        @Override
+        public void visitTypeInsn(final int opcode, final String type) {
+            addType(Type.getObjectType(type));
+        }
+
+        @Override
+        public void visitFieldInsn(
+            final int opcode,
+            final String owner,
+            final String name,
+            final String desc)
+        {
+            addInternalName(owner);
+            addDesc(desc);
+        }
+
+        @Override
+        public void visitMethodInsn(
+            final int opcode,
+            final String owner,
+            final String name,
+            final String desc)
+        {
+            addInternalName(owner);
+            addMethodDesc(desc);
+        }
+
+        @Override
+        public void visitInvokeDynamicInsn(
+            String name,
+            String desc,
+            Handle bsm,
+            Object... bsmArgs)
+        {
+            addMethodDesc(desc);
+            addConstant(bsm);
+            for(int i=0; i<bsmArgs.length; i++) {
+                addConstant(bsmArgs[i]);
+            }
+        }
+
+        @Override
+        public void visitLdcInsn(final Object cst) {
+            addConstant(cst);
+        }
+
+        @Override
+        public void visitMultiANewArrayInsn(final String desc, final int dims) {
+            addDesc(desc);
+        }
+
+        @Override
+        public void visitLocalVariable(
+            final String name,
+            final String desc,
+            final String signature,
+            final Label start,
+            final Label end,
+            final int index)
+        {
+            addTypeSignature(signature);
+        }
+
+        @Override
+        public void visitTryCatchBlock(
+            final Label start,
+            final Label end,
+            final Label handler,
+            final String type)
+        {
+            if (type != null) {
+                addInternalName(type);
+            }
         }
     }
 
-    public void visitEnum(
-        final String name,
-        final String desc,
-        final String value)
-    {
-        addDesc(desc);
-    }
+    class SignatureDependencyVisitor extends SignatureVisitor {
 
-    public AnnotationVisitor visitAnnotation(
-        final String name,
-        final String desc)
-    {
-        addDesc(desc);
-        return this;
-    }
+        String signatureClassName;
 
-    public AnnotationVisitor visitArray(final String name) {
-        return this;
-    }
+        public SignatureDependencyVisitor() {
+            super(Opcodes.ASM4);
+        }
 
-    // SignatureVisitor
+        @Override
+        public void visitClassType(final String name) {
+            signatureClassName = name;
+            addInternalName(name);
+        }
 
-    String signatureClassName;
-
-    public void visitFormalTypeParameter(final String name) {
-    }
-
-    public SignatureVisitor visitClassBound() {
-        return this;
-    }
-
-    public SignatureVisitor visitInterfaceBound() {
-        return this;
-    }
-
-    public SignatureVisitor visitSuperclass() {
-        return this;
-    }
-
-    public SignatureVisitor visitInterface() {
-        return this;
-    }
-
-    public SignatureVisitor visitParameterType() {
-        return this;
-    }
-
-    public SignatureVisitor visitReturnType() {
-        return this;
-    }
-
-    public SignatureVisitor visitExceptionType() {
-        return this;
-    }
-
-    public void visitBaseType(final char descriptor) {
-    }
-
-    public void visitTypeVariable(final String name) {
-    }
-
-    public SignatureVisitor visitArrayType() {
-        return this;
-    }
-
-    public void visitClassType(final String name) {
-        signatureClassName = name;
-        addInternalName(name);
-    }
-
-    public void visitInnerClassType(final String name) {
-        signatureClassName = signatureClassName + "$" + name;
-        addInternalName(signatureClassName);
-    }
-
-    public void visitTypeArgument() {
-    }
-
-    public SignatureVisitor visitTypeArgument(final char wildcard) {
-        return this;
-    }
-
-    // common
-
-    public void visitEnd() {
+        @Override
+        public void visitInnerClassType(final String name) {
+            signatureClassName = signatureClassName + "$" + name;
+            addInternalName(signatureClassName);
+        }
     }
 
     // ---------------------------------------------
@@ -404,7 +343,7 @@ public class DependencyVisitor implements
         }
     }
 
-    private void addInternalName(final String name) {
+    void addInternalName(final String name) {
         addType(Type.getObjectType(name));
     }
 
@@ -413,12 +352,12 @@ public class DependencyVisitor implements
             addInternalName(names[i]);
         }
     }
-    
-    private void addDesc(final String desc) {
+
+    void addDesc(final String desc) {
         addType(Type.getType(desc));
     }
 
-    private void addMethodDesc(final String desc) {
+    void addMethodDesc(final String desc) {
         addType(Type.getReturnType(desc));
         Type[] types = Type.getArgumentTypes(desc);
         for (int i = 0; i < types.length; i++) {
@@ -426,7 +365,7 @@ public class DependencyVisitor implements
         }
     }
 
-    private void addType(final Type t) {
+    void addType(final Type t) {
         switch (t.getSort()) {
             case Type.ARRAY:
                 addType(t.getElementType());
@@ -434,18 +373,31 @@ public class DependencyVisitor implements
             case Type.OBJECT:
                 addName(t.getInternalName());
                 break;
+            case Type.METHOD:
+                addMethodDesc(t.getDescriptor());
+                break;
         }
     }
 
     private void addSignature(final String signature) {
         if (signature != null) {
-            new SignatureReader(signature).accept(this);
+            new SignatureReader(signature).accept(new SignatureDependencyVisitor());
         }
     }
 
-    private void addTypeSignature(final String signature) {
+    void addTypeSignature(final String signature) {
         if (signature != null) {
-            new SignatureReader(signature).acceptType(this);
+            new SignatureReader(signature).acceptType(new SignatureDependencyVisitor());
+        }
+    }
+
+    void addConstant(final Object cst) {
+        if (cst instanceof Type) {
+            addType((Type) cst);
+        } else if (cst instanceof Handle) {
+            Handle h = (Handle) cst;
+            addInternalName(h.getOwner());
+            addMethodDesc(h.getDesc());
         }
     }
 }

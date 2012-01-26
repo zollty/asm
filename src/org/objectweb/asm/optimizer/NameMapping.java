@@ -1,6 +1,6 @@
 /***
  * ASM: a very small and fast Java bytecode manipulation framework
- * Copyright (c) 2000-2007 INRIA, France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,19 +41,22 @@ import org.objectweb.asm.Type;
 
 /**
  * A MAPPING from names to names, used to rename classes, fields and methods.
- * 
+ *
  * @author Eric Bruneton
  */
-public class NameMapping extends Properties {
+public class NameMapping {
 
-    public final Set unused;
+    public final Properties mapping;
+
+    public final Set<Object> unused;
 
     public NameMapping(final String file) throws IOException {
+        mapping = new Properties();
         InputStream is = null;
         try {
             is = new BufferedInputStream(new FileInputStream(file));
-            load(is);
-            unused = new HashSet(keySet());
+            mapping.load(is);
+            unused = new HashSet<Object>(mapping.keySet());
         } finally {
             if (is != null) {
                 is.close();
@@ -62,7 +65,7 @@ public class NameMapping extends Properties {
     }
 
     public String map(final String name) {
-        String s = (String) get(name);
+        String s = (String) mapping.get(name);
         if (s == null) {
             int p = name.indexOf('.');
             if (p == -1) {

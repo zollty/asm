@@ -1,6 +1,6 @@
 /***
  * ASM examples: examples showing how ASM can be used
- * Copyright (c) 2000-2007 INRIA, France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,7 +41,7 @@ import org.objectweb.asm.Opcodes;
 /**
  * A naive implementation of compiler for Brain**** language.
  * http://www.muppetlabs.com/~breadbox/bf/ *
- * 
+ *
  * @author Eugene Kuleshov
  */
 public class BFCompiler implements Opcodes {
@@ -115,7 +115,7 @@ public class BFCompiler implements Opcodes {
             mv.visitIntInsn(NEWARRAY, T_INT);
             mv.visitVarInsn(ASTORE, V_D);
 
-            Stack labels = new Stack();
+            Stack<Label> labels = new Stack<Label>();
 
             int d = 0;
             int p = 0;
@@ -187,11 +187,11 @@ public class BFCompiler implements Opcodes {
                         p = storeP(mv, p);
                         d = storeD(mv, d);
 
-                        mv.visitLabel((Label) labels.pop());
+                        mv.visitLabel(labels.pop());
                         mv.visitVarInsn(ALOAD, V_D);
                         mv.visitVarInsn(ILOAD, V_P);
                         mv.visitInsn(IALOAD);
-                        mv.visitJumpInsn(IFNE, (Label) labels.pop());
+                        mv.visitJumpInsn(IFNE, labels.pop());
                         break;
                 }
             }

@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,13 +29,11 @@
  */
 package org.objectweb.asm;
 
-import org.objectweb.asm.commons.EmptyVisitor;
-
 import junit.framework.TestSuite;
 
 /**
  * Annotations tests.
- * 
+ *
  * @author Eric Bruneton
  */
 public class AnnotationsTest extends AbstractTest {
@@ -44,6 +42,7 @@ public class AnnotationsTest extends AbstractTest {
         return new AnnotationsTest().getSuite();
     }
 
+    @Override
     public void test() throws Exception {
         ClassReader cr = new ClassReader(is);
         ClassWriter cw1 = new ClassWriter(0);
@@ -54,19 +53,38 @@ public class AnnotationsTest extends AbstractTest {
                 new ClassReader(cw1.toByteArray()));
     }
 
-    static class RemoveAnnotationsAdapter1 extends ClassAdapter {
+    static class EmptyAnnotationVisitor extends AnnotationVisitor {
 
-        public RemoveAnnotationsAdapter1(final ClassVisitor cv) {
-            super(cv);
+        public EmptyAnnotationVisitor() {
+            super(Opcodes.ASM4);
         }
 
+        @Override
+        public AnnotationVisitor visitAnnotation(String name, String desc) {
+            return this;
+        }
+
+        @Override
+        public AnnotationVisitor visitArray(String name) {
+            return this;
+        }
+    }
+
+    static class RemoveAnnotationsAdapter1 extends ClassVisitor {
+
+        public RemoveAnnotationsAdapter1(final ClassVisitor cv) {
+            super(Opcodes.ASM4, cv);
+        }
+
+        @Override
         public AnnotationVisitor visitAnnotation(
             final String desc,
             final boolean visible)
         {
-            return new EmptyVisitor();
+            return new EmptyAnnotationVisitor();
         }
 
+        @Override
         public MethodVisitor visitMethod(
             final int access,
             final String name,
@@ -74,41 +92,45 @@ public class AnnotationsTest extends AbstractTest {
             final String signature,
             final String[] exceptions)
         {
-            return new MethodAdapter(cv.visitMethod(access,
+            return new MethodVisitor(Opcodes.ASM4, cv.visitMethod(access,
                     name,
                     desc,
                     signature,
                     exceptions))
             {
 
+                @Override
                 public AnnotationVisitor visitAnnotationDefault() {
-                    return new EmptyVisitor();
+                    return new EmptyAnnotationVisitor();
                 }
 
+                @Override
                 public AnnotationVisitor visitAnnotation(
                     String desc,
                     boolean visible)
                 {
-                    return new EmptyVisitor();
+                    return new EmptyAnnotationVisitor();
                 }
 
+                @Override
                 public AnnotationVisitor visitParameterAnnotation(
                     int parameter,
                     String desc,
                     boolean visible)
                 {
-                    return new EmptyVisitor();
+                    return new EmptyAnnotationVisitor();
                 }
             };
         }
     }
 
-    static class RemoveAnnotationsAdapter2 extends ClassAdapter {
+    static class RemoveAnnotationsAdapter2 extends ClassVisitor {
 
         public RemoveAnnotationsAdapter2(final ClassVisitor cv) {
-            super(cv);
+            super(Opcodes.ASM4, cv);
         }
 
+        @Override
         public AnnotationVisitor visitAnnotation(
             final String desc,
             final boolean visible)
@@ -116,6 +138,7 @@ public class AnnotationsTest extends AbstractTest {
             return null;
         }
 
+        @Override
         public MethodVisitor visitMethod(
             final int access,
             final String name,
@@ -123,17 +146,19 @@ public class AnnotationsTest extends AbstractTest {
             final String signature,
             final String[] exceptions)
         {
-            return new MethodAdapter(cv.visitMethod(access,
+            return new MethodVisitor(Opcodes.ASM4, cv.visitMethod(access,
                     name,
                     desc,
                     signature,
                     exceptions))
             {
 
+                @Override
                 public AnnotationVisitor visitAnnotationDefault() {
                     return null;
                 }
 
+                @Override
                 public AnnotationVisitor visitAnnotation(
                     String desc,
                     boolean visible)
@@ -141,6 +166,7 @@ public class AnnotationsTest extends AbstractTest {
                     return null;
                 }
 
+                @Override
                 public AnnotationVisitor visitParameterAnnotation(
                     int parameter,
                     String desc,

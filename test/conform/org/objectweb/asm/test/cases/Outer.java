@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,11 +39,12 @@ import org.objectweb.asm.MethodVisitor;
  * Generates a class with two inner classes. Covers all features used by inner
  * classes (visitInner, visitOuter, synthetic members, etc). Also covers the
  * V1_4 class version and the DEPRECATED access flag.
- * 
+ *
  * @author Eric Bruneton
  */
 public class Outer extends Generator {
 
+    @Override
     public void generate(final String dir) throws IOException {
         generate(dir, "pkg/Outer.class", dump());
         generate(dir, "pkg/Outer$1.class", dump1());

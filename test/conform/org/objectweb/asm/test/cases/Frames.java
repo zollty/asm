@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,20 +31,19 @@ package org.objectweb.asm.test.cases;
 
 import java.io.IOException;
 
-import org.objectweb.asm.ClassAdapter;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodAdapter;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 /**
  * Generates classes with StackMap and StackMapTable attributes. Covers all
  * frame (FULL, SAME, etc.) and frame element types (TOP, NULL, INTEGER, etc.).
  * Also covers the V1_6 class version.
- * 
+ *
  * @author Eric Bruneton
  */
 public class Frames extends Generator {
@@ -53,6 +52,7 @@ public class Frames extends Generator {
     final static String I1 = "Ljava/io/Serializable;";
     final static String I2 = "Ljava/lang/Comparable;";
 
+    @Override
     public void generate(final String dir) throws IOException {
         byte[] b = dump();
         ClassWriter cw = new ClassWriter(0);
@@ -808,15 +808,16 @@ public class Frames extends Generator {
     /**
      * Ad hoc class adapter used to rename the FrameTable class and to change
      * its class version.
-     * 
+     *
      * @author Eric Bruneton
      */
-    static class RenameAdapter extends ClassAdapter {
+    static class RenameAdapter extends ClassVisitor {
 
         public RenameAdapter(final ClassVisitor cv) {
-            super(cv);
+            super(Opcodes.ASM4, cv);
         }
 
+        @Override
         public void visit(
             final int version,
             final int access,
@@ -833,6 +834,7 @@ public class Frames extends Generator {
                     interfaces);
         }
 
+        @Override
         public MethodVisitor visitMethod(
             final int access,
             final String name,
@@ -840,12 +842,13 @@ public class Frames extends Generator {
             final String signature,
             final String[] exceptions)
         {
-            return new MethodAdapter(super.visitMethod(access,
+            return new MethodVisitor(Opcodes.ASM4, super.visitMethod(access,
                     name,
                     desc,
                     signature,
                     exceptions))
             {
+                @Override
                 public void visitFrame(
                     final int type,
                     final int nLocal,
@@ -870,6 +873,7 @@ public class Frames extends Generator {
                     super.visitFrame(type, nLocal, clocal, nStack, cstack);
                 }
 
+                @Override
                 public void visitTypeInsn(final int opcode, final String desc) {
                     if (desc.equals("pkg/FrameTable")) {
                         super.visitTypeInsn(opcode, "pkg/FrameMap");
@@ -878,6 +882,7 @@ public class Frames extends Generator {
                     }
                 }
 
+                @Override
                 public void visitMethodInsn(
                     final int opcode,
                     final String owner,

@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,17 +33,17 @@ import junit.framework.TestCase;
 
 /**
  * ASMifierClassVisitor unit tests
- * 
+ *
  * @author Eric Bruneton
  */
 public class ASMifierUnitTest extends TestCase {
 
     public void testASMifierClassVisitor() throws Exception {
         String s = getClass().getName();
-        ASMifierClassVisitor.main(new String[0]);
-        ASMifierClassVisitor.main(new String[] { "-debug" });
-        ASMifierClassVisitor.main(new String[] { s });
-        ASMifierClassVisitor.main(new String[] { "-debug", s });
-        ASMifierClassVisitor.main(new String[] { "output/test/cases/Interface.class" });
+        ASMifier.main(new String[0]);
+        ASMifier.main(new String[] { "-debug" });
+        ASMifier.main(new String[] { s });
+        ASMifier.main(new String[] { "-debug", s });
+        ASMifier.main(new String[] { "output/test/cases/Interface.class" });
     }
 }

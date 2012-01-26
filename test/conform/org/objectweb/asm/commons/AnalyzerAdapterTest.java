@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,6 @@ package org.objectweb.asm.commons;
 import junit.framework.TestSuite;
 
 import org.objectweb.asm.AbstractTest;
-import org.objectweb.asm.ClassAdapter;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -41,7 +40,7 @@ import org.objectweb.asm.Opcodes;
 
 /**
  * AnalyzerAdapter tests.
- * 
+ *
  * @author Eric Bruneton
  */
 public class AnalyzerAdapterTest extends AbstractTest {
@@ -50,6 +49,7 @@ public class AnalyzerAdapterTest extends AbstractTest {
         return new AnalyzerAdapterTest().getSuite();
     }
 
+    @Override
     public void test() throws Exception {
         ClassReader cr = new ClassReader(is);
         if (cr.readInt(4) != Opcodes.V1_6) {
@@ -58,14 +58,16 @@ public class AnalyzerAdapterTest extends AbstractTest {
                 cr.accept(cw, 0);
                 cr = new ClassReader(cw.toByteArray());
             } catch (Exception e) {
+                skipTest();
                 return;
             }
         }
         ClassWriter cw = new ClassWriter(0);
-        ClassVisitor cv = new ClassAdapter(cw) {
+        ClassVisitor cv = new ClassVisitor(Opcodes.ASM4, cw) {
 
             private String owner;
 
+            @Override
             public void visit(
                 final int version,
                 final int access,
@@ -83,6 +85,7 @@ public class AnalyzerAdapterTest extends AbstractTest {
                         interfaces);
             }
 
+            @Override
             public MethodVisitor visitMethod(
                 final int access,
                 final String name,
@@ -99,5 +102,11 @@ public class AnalyzerAdapterTest extends AbstractTest {
             }
         };
         cr.accept(cv, ClassReader.EXPAND_FRAMES);
+    }
+
+    /**
+     * Dummy method to avoid a FindBugs warning.
+     */
+    private void skipTest() {
     }
 }

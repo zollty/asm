@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,29 +29,30 @@
  */
 package org.objectweb.asm.tree.analysis;
 
+import junit.framework.TestCase;
+
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodNode;
 
-import junit.framework.TestCase;
-
 /**
  * SimpleVerifier unit tests.
- * 
+ *
  * @author Eric Bruneton
  */
 public class SimpleVerifierUnitTest extends TestCase implements Opcodes {
 
-    private Analyzer a;
+    private Analyzer<?> a;
 
     private MethodNode mn;
 
+    @Override
     protected void setUp() {
         Type c = Type.getType("LC;");
         Type d = Type.getType("Ljava/lang/Number;");
-        a = new Analyzer(new SimpleVerifier(c, d, false));
+        a = new Analyzer<BasicValue>(new SimpleVerifier(c, d, false));
         mn = new MethodNode(ACC_PUBLIC, "m", "()V", null, null);
     }
 
@@ -59,7 +60,7 @@ public class SimpleVerifierUnitTest extends TestCase implements Opcodes {
         mn.visitInsn(RETURN);
         mn.visitMaxs(10, 10);
         a.analyze("C", mn);
-        Frame[] frames = a.getFrames();
+        Frame<?>[] frames = a.getFrames();
         for (int i = 0; i < frames.length; ++i) {
             if (frames[i] != null) {
                 frames[i].toString();
@@ -75,6 +76,7 @@ public class SimpleVerifierUnitTest extends TestCase implements Opcodes {
             a.analyze("C", mn);
             fail();
         } catch (AnalyzerException e) {
+            success();
         } catch (RuntimeException e) {
         }
     }
@@ -314,6 +316,7 @@ public class SimpleVerifierUnitTest extends TestCase implements Opcodes {
             a.analyze("C", mn);
             fail();
         } catch (AnalyzerException e) {
+            success();
         } catch (RuntimeException e) {
         }
     }
@@ -332,6 +335,7 @@ public class SimpleVerifierUnitTest extends TestCase implements Opcodes {
             a.analyze("C", mn);
             fail();
         } catch (AnalyzerException e) {
+            success();
         } catch (RuntimeException e) {
         }
     }
@@ -384,7 +388,7 @@ public class SimpleVerifierUnitTest extends TestCase implements Opcodes {
     public void _testOverlappingSubroutines() {
         // TODO currently Analyzer can not detect this situation. The problem
         // is that other overlapping subroutine situations are valid, such as
-        // when a nested subroutine implicitely returns to its parent
+        // when a nested subroutine implicitly returns to its parent
         // subroutine, without a RET.
         Label l0 = new Label();
         Label l1 = new Label();
@@ -439,5 +443,11 @@ public class SimpleVerifierUnitTest extends TestCase implements Opcodes {
             fail();
         } catch (Exception e) {
         }
+    }
+
+    /**
+     * Dummy method to avoid a FindBugs warning.
+     */
+    private static void success() {
     }
 }

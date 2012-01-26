@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,18 +33,19 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import junit.framework.TestSuite;
+
 import org.objectweb.asm.AbstractTest;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.commons.EmptyVisitor;
-
-import junit.framework.TestSuite;
+import org.objectweb.asm.Opcodes;
 
 /**
  * ClassNode tests.
- * 
+ *
  * @author Eric Bruneton
  */
 public class ClassNodeTest extends AbstractTest {
@@ -53,26 +54,29 @@ public class ClassNodeTest extends AbstractTest {
         return new ClassNodeTest().getSuite();
     }
 
+    @Override
     public void test() throws Exception {
         ClassReader cr = new ClassReader(is);
         ClassNode cn = new ClassNode();
         cr.accept(cn, 0);
         // clone instructions for testing clone methods
         for (int i = 0; i < cn.methods.size(); ++i) {
-            MethodNode mn = (MethodNode) cn.methods.get(i);
-            Iterator it = mn.instructions.iterator();
-            Map m = new HashMap() {
-                public Object get(final Object o) {
-                    return o;
+            MethodNode mn = cn.methods.get(i);
+            Iterator<AbstractInsnNode> it = mn.instructions.iterator();
+            Map<LabelNode, LabelNode> m = new HashMap<LabelNode, LabelNode>() {
+                @Override
+                public LabelNode get(final Object o) {
+                    return (LabelNode)o;
                 }
             };
             while (it.hasNext()) {
-                AbstractInsnNode insn = (AbstractInsnNode) it.next();
+                AbstractInsnNode insn = it.next();
                 mn.instructions.set(insn, insn.clone(m));
             }
         }
         // test accept with visitors that remove class members
-        cn.accept(new EmptyVisitor() {
+        cn.accept(new ClassVisitor(Opcodes.ASM4) {
+            @Override
             public FieldVisitor visitField(
                 int access,
                 String name,
@@ -83,6 +87,7 @@ public class ClassNodeTest extends AbstractTest {
                 return null;
             }
 
+            @Override
             public MethodVisitor visitMethod(
                 int access,
                 String name,

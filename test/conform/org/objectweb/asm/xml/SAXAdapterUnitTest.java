@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,32 +29,36 @@
  */
 package org.objectweb.asm.xml;
 
+import junit.framework.TestCase;
+
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-import junit.framework.TestCase;
-
 /**
  * SAXAdapter unit tests
- * 
+ *
  * @author Eric Bruneton
  */
 public class SAXAdapterUnitTest extends TestCase {
 
     SAXAdapter sa;
 
+    @Override
     protected void setUp() {
         sa = new SAXAdapter(new DefaultHandler() {
 
+            @Override
             public void startDocument() throws SAXException {
                 throw new SAXException();
             }
 
+            @Override
             public void endDocument() throws SAXException {
                 throw new SAXException();
             }
 
+            @Override
             public void startElement(
                 final String arg0,
                 final String arg1,
@@ -64,6 +68,7 @@ public class SAXAdapterUnitTest extends TestCase {
                 throw new SAXException();
             }
 
+            @Override
             public void endElement(
                 final String arg0,
                 final String arg1,

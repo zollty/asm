@@ -1,6 +1,6 @@
 /***
  * ASM: a very small and fast Java bytecode manipulation framework
- * Copyright (c) 2000-2005 INRIA, France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,20 +30,45 @@
 
 package org.objectweb.asm.commons;
 
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodAdapter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-public class InstructionAdapter extends MethodAdapter {
+/**
+ * A {@link MethodVisitor} providing a more detailed API to generate and
+ * transform instructions.
+ *
+ * @author Eric Bruneton
+ */
+public class InstructionAdapter extends MethodVisitor {
 
     public final static Type OBJECT_TYPE = Type.getType("Ljava/lang/Object;");
 
-    public InstructionAdapter(MethodVisitor mv) {
-        super(mv);
+    /**
+     * Creates a new {@link InstructionAdapter}. <i>Subclasses must not use this
+     * constructor</i>. Instead, they must use the
+     * {@link #InstructionAdapter(int, MethodVisitor)} version.
+     *
+     * @param mv the method visitor to which this adapter delegates calls.
+     */
+    public InstructionAdapter(final MethodVisitor mv) {
+        this(Opcodes.ASM4, mv);
     }
 
+    /**
+     * Creates a new {@link InstructionAdapter}.
+     *
+     * @param api the ASM API version implemented by this visitor. Must be one
+     *        of {@link Opcodes#ASM4}.
+     * @param mv the method visitor to which this adapter delegates calls.
+     */
+    protected InstructionAdapter(final int api, final MethodVisitor mv) {
+        super(api, mv);
+    }
+
+    @Override
     public void visitInsn(final int opcode) {
         switch (opcode) {
             case Opcodes.NOP:
@@ -352,6 +377,7 @@ public class InstructionAdapter extends MethodAdapter {
         }
     }
 
+    @Override
     public void visitIntInsn(final int opcode, final int operand) {
         switch (opcode) {
             case Opcodes.BIPUSH:
@@ -395,6 +421,7 @@ public class InstructionAdapter extends MethodAdapter {
         }
     }
 
+    @Override
     public void visitVarInsn(final int opcode, final int var) {
         switch (opcode) {
             case Opcodes.ILOAD:
@@ -435,6 +462,7 @@ public class InstructionAdapter extends MethodAdapter {
         }
     }
 
+    @Override
     public void visitTypeInsn(final int opcode, final String type) {
         Type t = Type.getObjectType(type);
         switch (opcode) {
@@ -455,6 +483,7 @@ public class InstructionAdapter extends MethodAdapter {
         }
     }
 
+    @Override
     public void visitFieldInsn(
         final int opcode,
         final String owner,
@@ -479,6 +508,7 @@ public class InstructionAdapter extends MethodAdapter {
         }
     }
 
+    @Override
     public void visitMethodInsn(
         final int opcode,
         final String owner,
@@ -503,6 +533,17 @@ public class InstructionAdapter extends MethodAdapter {
         }
     }
 
+    @Override
+    public void visitInvokeDynamicInsn(
+        String name,
+        String desc,
+        Handle bsm,
+        Object... bsmArgs)
+    {
+       invokedynamic(name, desc, bsm, bsmArgs);
+    }
+
+    @Override
     public void visitJumpInsn(final int opcode, final Label label) {
         switch (opcode) {
             case Opcodes.IFEQ:
@@ -564,10 +605,12 @@ public class InstructionAdapter extends MethodAdapter {
         }
     }
 
+    @Override
     public void visitLabel(final Label label) {
         mark(label);
     }
 
+    @Override
     public void visitLdcInsn(final Object cst) {
         if (cst instanceof Integer) {
             int val = ((Integer) cst).intValue();
@@ -597,24 +640,29 @@ public class InstructionAdapter extends MethodAdapter {
             aconst(cst);
         } else if (cst instanceof Type) {
             tconst((Type) cst);
+        } else if (cst instanceof Handle) {
+            hconst((Handle) cst);
         } else {
             throw new IllegalArgumentException();
         }
     }
 
+    @Override
     public void visitIincInsn(final int var, final int increment) {
         iinc(var, increment);
     }
 
+    @Override
     public void visitTableSwitchInsn(
         final int min,
         final int max,
         final Label dflt,
-        final Label[] labels)
+        final Label... labels)
     {
         tableswitch(min, max, dflt, labels);
     }
 
+    @Override
     public void visitLookupSwitchInsn(
         final Label dflt,
         final int[] keys,
@@ -623,6 +671,7 @@ public class InstructionAdapter extends MethodAdapter {
         lookupswitch(dflt, keys, labels);
     }
 
+    @Override
     public void visitMultiANewArrayInsn(final String desc, final int dims) {
         multianewarray(desc, dims);
     }
@@ -681,6 +730,10 @@ public class InstructionAdapter extends MethodAdapter {
 
     public void tconst(final Type type) {
         mv.visitLdcInsn(type);
+    }
+
+    public void hconst(final Handle handle) {
+        mv.visitLdcInsn(handle);
     }
 
     public void load(final int var, final Type type) {
@@ -918,7 +971,7 @@ public class InstructionAdapter extends MethodAdapter {
         final int min,
         final int max,
         final Label dflt,
-        final Label[] labels)
+        final Label... labels)
     {
         mv.visitTableSwitchInsn(min, max, dflt, labels);
     }
@@ -997,6 +1050,15 @@ public class InstructionAdapter extends MethodAdapter {
         final String desc)
     {
         mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, owner, name, desc);
+    }
+
+    public void invokedynamic(
+        String name,
+        String desc,
+        Handle bsm,
+        Object[] bsmArgs)
+    {
+        mv.visitInvokeDynamicInsn(name, desc, bsm, bsmArgs);
     }
 
     public void anew(final Type type) {

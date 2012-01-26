@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,7 +34,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import org.objectweb.asm.AbstractTest;
-import org.objectweb.asm.ClassAdapter;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -43,17 +42,18 @@ import org.objectweb.asm.Opcodes;
 
 /**
  * Simple example of using AdviceAdapter to implement tracing callback
- * 
+ *
  * @author Eugene Kuleshov
  */
 public class AdviceAdapterUnitTest extends AbstractTest {
 
+    @Override
     public void test() throws Exception {
-        Class c = getClass();
+        Class<?> c = getClass();
         String name = c.getName();
         AdvisingClassLoader cl = new AdvisingClassLoader(name + "$");
-        Class cc = cl.loadClass(name + "$B");
-        Method m = cc.getMethod("run", new Class[] { Integer.TYPE });
+        Class<?> cc = cl.loadClass(name + "$B");
+        Method m = cc.getMethod("run", new Class<?>[] { Integer.TYPE });
         try {
             m.invoke(null, new Object[] { new Integer(0) });
         } catch (InvocationTargetException e) {
@@ -68,7 +68,8 @@ public class AdviceAdapterUnitTest extends AbstractTest {
             this.prefix = prefix;
         }
 
-        public Class loadClass(final String name) throws ClassNotFoundException
+        @Override
+        public Class<?> loadClass(final String name) throws ClassNotFoundException
         {
             if (name.startsWith(prefix)) {
                 try {
@@ -110,13 +111,14 @@ public class AdviceAdapterUnitTest extends AbstractTest {
         return sb;
     }
 
-    static class AdviceClassAdapter extends ClassAdapter implements Opcodes {
+    static class AdviceClassAdapter extends ClassVisitor implements Opcodes {
         String cname;
 
         public AdviceClassAdapter(final ClassVisitor cv) {
-            super(cv);
+            super(Opcodes.ASM4, cv);
         }
 
+        @Override
         public void visit(
             final int version,
             final int access,
@@ -129,6 +131,7 @@ public class AdviceAdapterUnitTest extends AbstractTest {
             super.visit(version, access, name, signature, superName, interfaces);
         }
 
+        @Override
         public MethodVisitor visitMethod(
             final int access,
             final String name,
@@ -148,7 +151,9 @@ public class AdviceAdapterUnitTest extends AbstractTest {
                 return mv;
             }
 
-            return new AdviceAdapter(mv, access, name, desc) {
+            return new AdviceAdapter(Opcodes.ASM4, mv, access, name, desc) {
+
+                @Override
                 protected void onMethodEnter() {
                     mv.visitLdcInsn(cname + "." + name + desc);
                     mv.visitMethodInsn(INVOKESTATIC,
@@ -157,6 +162,7 @@ public class AdviceAdapterUnitTest extends AbstractTest {
                             "(Ljava/lang/String;)V");
                 }
 
+                @Override
                 protected void onMethodExit(final int opcode) {
                     mv.visitLdcInsn(cname + "." + name + desc);
                     mv.visitMethodInsn(INVOKESTATIC,

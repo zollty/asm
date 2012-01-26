@@ -1,6 +1,6 @@
 /***
  * ASM examples: examples showing how ASM can be used
- * Copyright (c) 2000-2007 INRIA, France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,23 +37,28 @@ import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import junit.framework.TestCase;
-
 import org.objectweb.asm.ClassWriter;
 
 /**
  * A naive implementation of compiler for Brain**** language.
  * http://www.muppetlabs.com/~breadbox/bf/ *
- * 
+ *
  * @author Eugene Kuleshov
  */
-public class BFCompilerTest extends TestCase {
+public class BFCompilerTest {
+
     private BFCompiler bc;
 
     private ClassWriter cw;
 
-    protected void setUp() throws Exception {
-        super.setUp();
+    public static void main(String[] args) throws Throwable {
+        new BFCompilerTest().testCompileHelloWorld();
+        new BFCompilerTest().testCompileEcho();
+        new BFCompilerTest().testCompileYaPi();
+        new BFCompilerTest().testCompileTest1();
+	}
+
+    public BFCompilerTest() throws Exception {
         bc = new BFCompiler();
         cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
     }
@@ -101,23 +106,18 @@ public class BFCompilerTest extends TestCase {
                 ""));
     }
 
+    public static void assertEquals(String s1, String s2) {
+        if (!s1.equals(s2)) {
+            System.out.println("ERROR: expected '" + s1 + "' but got '" + s2 + "'");
+        }
+    }
+
     private String execute(
         final String name,
         final String code,
         final String input) throws Throwable
     {
         bc.compile(new StringReader(code), name, name, cw);
-
-        // ClassReader cr = new ClassReader(cw.toByteArray());
-        // cr.accept(new TraceClassVisitor(null, new PrintWriter(System.err)),
-        // true);
-
-        // File tmp = File.createTempFile(name, ".class");
-        // System.err.println(tmp.getAbsolutePath());
-        // FileOutputStream fos = new FileOutputStream(tmp);
-        // fos.write(cw.toByteArray());
-        // fos.flush();
-        // fos.close();
 
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         InputStream is = System.in;
@@ -129,23 +129,27 @@ public class BFCompilerTest extends TestCase {
             TestClassLoader cl = new TestClassLoader(getClass().getClassLoader(),
                     name,
                     cw.toByteArray());
-            Class c = cl.loadClass(name);
+            Class<?> c = cl.loadClass(name);
             Method m = c.getDeclaredMethod("main",
-                    new Class[] { String[].class });
+                    new Class<?>[] { String[].class });
             m.invoke(null, new Object[] { new String[0] });
 
         } catch (InvocationTargetException ex) {
             throw ex.getCause();
-
         } finally {
             System.setIn(is);
             System.setOut(os);
-
         }
-        return new String(bos.toByteArray(), "ASCII");
+
+        String output = new String(bos.toByteArray(), "ASCII");
+
+        System.out.println(code + " WITH INPUT '" + input + "' GIVES " + output);
+
+        return output;
     }
 
     private static final class TestClassLoader extends ClassLoader {
+
         private final String className;
 
         private final ClassLoader cl;
@@ -163,7 +167,8 @@ public class BFCompilerTest extends TestCase {
             this.bytecode = bytecode;
         }
 
-        public Class loadClass(final String name) throws ClassNotFoundException
+        @Override
+        public Class<?> loadClass(final String name) throws ClassNotFoundException
         {
             if (className.equals(name)) {
                 return super.defineClass(className,
@@ -175,5 +180,4 @@ public class BFCompilerTest extends TestCase {
         }
 
     }
-
 }

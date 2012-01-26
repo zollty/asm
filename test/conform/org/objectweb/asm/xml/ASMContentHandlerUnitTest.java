@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,20 +29,19 @@
  */
 package org.objectweb.asm.xml;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import junit.framework.TestCase;
 
+import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 
-import junit.framework.TestCase;
-
 /**
  * ASMContentHandler unit tests
- * 
+ *
  * @author Eric Bruneton
  */
 public class ASMContentHandlerUnitTest extends TestCase implements Opcodes {
@@ -53,12 +52,88 @@ public class ASMContentHandlerUnitTest extends TestCase implements Opcodes {
 
     MethodVisitor mv;
 
+    @Override
     protected void setUp() throws Exception {
-        h = new ASMContentHandler(new ByteArrayOutputStream() {
-            public void write(final byte[] b) throws IOException {
-                throw new IOException();
+        h = new ASMContentHandler(new ClassVisitor(Opcodes.ASM4) {
+
+            AnnotationVisitor av = new AnnotationVisitor(Opcodes.ASM4) {
+
+                @Override
+                public AnnotationVisitor visitAnnotation(
+                    String name,
+                    String desc)
+                {
+                    return this;
+                }
+
+                @Override
+                public AnnotationVisitor visitArray(String name) {
+                    return this;
+                }
+            };
+
+            @Override
+            public AnnotationVisitor visitAnnotation(
+                String desc,
+                boolean visible)
+            {
+                return av;
             }
-        }, false);
+
+            @Override
+            public FieldVisitor visitField(
+                int access,
+                String name,
+                String desc,
+                String signature,
+                Object value)
+            {
+                return new FieldVisitor(Opcodes.ASM4) {
+
+                    @Override
+                    public AnnotationVisitor visitAnnotation(
+                        String desc,
+                        boolean visible)
+                    {
+                        return av;
+                    }
+                };
+            }
+
+            @Override
+            public MethodVisitor visitMethod(
+                int access,
+                String name,
+                String desc,
+                String signature,
+                String[] exceptions)
+            {
+                return new MethodVisitor(Opcodes.ASM4) {
+
+                    @Override
+                    public AnnotationVisitor visitAnnotationDefault() {
+                        return av;
+                    }
+
+                    @Override
+                    public AnnotationVisitor visitAnnotation(
+                        String desc,
+                        boolean visible)
+                    {
+                        return av;
+                    }
+
+                    @Override
+                    public AnnotationVisitor visitParameterAnnotation(
+                        int parameter,
+                        String desc,
+                        boolean visible)
+                    {
+                        return av;
+                    }
+                };
+            }
+        });
         cv = new SAXClassAdapter(h, true);
         cv.visit(V1_5, ACC_PUBLIC, "C", null, "java/lang/Object", null);
     }
@@ -107,7 +182,7 @@ public class ASMContentHandlerUnitTest extends TestCase implements Opcodes {
         }
     }
 
-    public void testIOException() {
+    public void testEndDocument() {
         cv.visitEnd();
         try {
             h.endDocument();

@@ -1,6 +1,6 @@
 /***
  * ASM: a very small and fast Java bytecode manipulation framework
- * Copyright (c) 2000-2007 INRIA, France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,13 +30,12 @@
 package org.objectweb.asm.commons;
 
 import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodAdapter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 /**
- * A {@link MethodAdapter} that renumbers local variables in their order of
+ * A {@link MethodVisitor} that renumbers local variables in their order of
  * appearance. This adapter allows one to easily add new local variables to a
  * method. It may be used by inheriting from this class, but the preferred way
  * of using it is via delegation: the next visitor in the chain can indeed add
@@ -47,7 +46,7 @@ import org.objectweb.asm.Type;
  * @author Eugene Kuleshov
  * @author Eric Bruneton
  */
-public class LocalVariablesSorter extends MethodAdapter {
+public class LocalVariablesSorter extends MethodVisitor {
 
     private static final Type OBJECT_TYPE = Type.getObjectType("java/lang/Object");
 
@@ -79,7 +78,9 @@ public class LocalVariablesSorter extends MethodAdapter {
     private boolean changed;
 
     /**
-     * Creates a new {@link LocalVariablesSorter}.
+     * Creates a new {@link LocalVariablesSorter}. <i>Subclasses must not use
+     * this constructor</i>. Instead, they must use the
+     * {@link #LocalVariablesSorter(int, int, String, MethodVisitor)} version.
      *
      * @param access access flags of the adapted method.
      * @param desc the method's descriptor (see {@link Type Type}).
@@ -90,7 +91,25 @@ public class LocalVariablesSorter extends MethodAdapter {
         final String desc,
         final MethodVisitor mv)
     {
-        super(mv);
+        this(Opcodes.ASM4, access, desc, mv);
+    }
+
+    /**
+     * Creates a new {@link LocalVariablesSorter}.
+     *
+     * @param api the ASM API version implemented by this visitor. Must be one
+     *        of {@link Opcodes#ASM4}.
+     * @param access access flags of the adapted method.
+     * @param desc the method's descriptor (see {@link Type Type}).
+     * @param mv the method visitor to which this adapter delegates calls.
+     */
+    protected LocalVariablesSorter(
+        final int api,
+        final int access,
+        final String desc,
+        final MethodVisitor mv)
+    {
+        super(api, mv);
         Type[] args = Type.getArgumentTypes(desc);
         nextLocal = (Opcodes.ACC_STATIC & access) == 0 ? 1 : 0;
         for (int i = 0; i < args.length; i++) {
@@ -99,6 +118,7 @@ public class LocalVariablesSorter extends MethodAdapter {
         firstLocal = nextLocal;
     }
 
+    @Override
     public void visitVarInsn(final int opcode, final int var) {
         Type type;
         switch (opcode) {
@@ -132,14 +152,17 @@ public class LocalVariablesSorter extends MethodAdapter {
         mv.visitVarInsn(opcode, remap(var, type));
     }
 
+    @Override
     public void visitIincInsn(final int var, final int increment) {
         mv.visitIincInsn(remap(var, Type.INT_TYPE), increment);
     }
 
+    @Override
     public void visitMaxs(final int maxStack, final int maxLocals) {
         mv.visitMaxs(maxStack, nextLocal);
     }
 
+    @Override
     public void visitLocalVariable(
         final String name,
         final String desc,
@@ -152,6 +175,7 @@ public class LocalVariablesSorter extends MethodAdapter {
         mv.visitLocalVariable(name, desc, signature, start, end, newIndex);
     }
 
+    @Override
     public void visitFrame(
         final int type,
         final int nLocal,

@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -45,20 +45,20 @@ import org.codehaus.janino.IClassLoader;
 import org.codehaus.janino.Parser;
 import org.codehaus.janino.Scanner;
 import org.codehaus.janino.UnitCompiler;
-
 import org.objectweb.asm.AbstractTest;
 import org.objectweb.asm.Attribute;
-import org.objectweb.asm.ClassAdapter;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.MethodAdapter;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.attrs.CodeComment;
 import org.objectweb.asm.attrs.Comment;
+import org.objectweb.asm.util.TraceClassVisitor;
 
 /**
  * GASMifier tests.
- * 
+ *
  * @author Eugene Kuleshov
  * @author Eric Bruneton
  */
@@ -72,6 +72,7 @@ public class GASMifierTest extends AbstractTest {
         return new GASMifierTest().getSuite();
     }
 
+    @Override
     public void test() throws Exception {
         ClassReader cr = new ClassReader(is);
 
@@ -80,8 +81,10 @@ public class GASMifierTest extends AbstractTest {
         }
 
         StringWriter sw = new StringWriter();
-        GASMifierClassVisitor cv = new GASMifierClassVisitor(new PrintWriter(sw));
-        cr.accept(cv,
+        TraceClassVisitor cv = new TraceClassVisitor(null,
+                new GASMifier(),
+                new PrintWriter(sw));
+        cr.accept(new ClassLocalVariablesSorter(cv),
                 new Attribute[] { new Comment(), new CodeComment() },
                 ClassReader.EXPAND_FRAMES);
 
@@ -96,25 +99,9 @@ public class GASMifierTest extends AbstractTest {
         }
 
         ClassWriter cw = new ClassWriter(0);
-        cr.accept(new ClassAdapter(cw) {
-            public MethodVisitor visitMethod(
-                final int access,
-                final String name,
-                final String desc,
-                final String signature,
-                final String[] exceptions)
-            {
-                return new LocalVariablesSorter(access,
-                        desc,
-                        super.visitMethod(access,
-                                name,
-                                desc,
-                                signature,
-                                exceptions));
-            }
-        },
-                new Attribute[] { new Comment(), new CodeComment() },
-                ClassReader.EXPAND_FRAMES);
+        cr.accept(new ClassLocalVariablesSorter(cw),
+            new Attribute[] { new Comment(), new CodeComment() },
+            ClassReader.EXPAND_FRAMES);
         cr = new ClassReader(cw.toByteArray());
 
         String nd = n + "Dump";
@@ -122,8 +109,8 @@ public class GASMifierTest extends AbstractTest {
             nd = "asm." + nd;
         }
 
-        Class c = LOADER.defineClass(nd, generatorClassData);
-        Method m = c.getMethod("dump", new Class[0]);
+        Class<?> c = LOADER.defineClass(nd, generatorClassData);
+        Method m = c.getMethod("dump", new Class<?>[0]);
         byte[] b;
         try {
             b = (byte[]) m.invoke(null, new Object[0]);
@@ -148,7 +135,7 @@ public class GASMifierTest extends AbstractTest {
 
     static class TestClassLoader extends ClassLoader {
 
-        public Class defineClass(final String name, final byte[] b) {
+        public Class<?> defineClass(final String name, final byte[] b) {
             return defineClass(name, b, 0, b.length);
         }
     }
@@ -166,12 +153,13 @@ public class GASMifierTest extends AbstractTest {
         }
     }
 
-    static class Filter extends ClassAdapter {
+    static class ClassLocalVariablesSorter extends ClassVisitor {
 
-        public Filter() {
-            super(null);
+        public ClassLocalVariablesSorter(final ClassVisitor cv) {
+            super(Opcodes.ASM4, cv);
         }
 
+        @Override
         public MethodVisitor visitMethod(
             final int access,
             final String name,
@@ -179,12 +167,33 @@ public class GASMifierTest extends AbstractTest {
             final String signature,
             final String[] exceptions)
         {
-            return new MethodAdapter(super.visitMethod(access,
+            return new LocalVariablesSorter(access,
+                    desc,
+                    super.visitMethod(access, name, desc, signature, exceptions));
+        }
+    }
+
+    static class Filter extends ClassVisitor {
+
+        public Filter() {
+            super(Opcodes.ASM4);
+        }
+
+        @Override
+        public MethodVisitor visitMethod(
+            final int access,
+            final String name,
+            final String desc,
+            final String signature,
+            final String[] exceptions)
+        {
+            return new MethodVisitor(Opcodes.ASM4, super.visitMethod(access,
                     name,
                     desc,
                     signature,
                     exceptions))
             {
+                @Override
                 public void visitMaxs(final int maxStack, final int maxLocals) {
                     super.visitMaxs(0, 0);
                 }

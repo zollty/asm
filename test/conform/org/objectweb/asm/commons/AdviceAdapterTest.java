@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,7 +33,6 @@ import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
 import org.objectweb.asm.AbstractTest;
-import org.objectweb.asm.ClassAdapter;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -42,7 +41,7 @@ import org.objectweb.asm.Opcodes;
 
 /**
  * AdviceAdapter tests.
- * 
+ *
  * @author Eugene Kuleshov
  */
 public class AdviceAdapterTest extends AbstractTest {
@@ -55,6 +54,7 @@ public class AdviceAdapterTest extends AbstractTest {
         return new AdviceAdapterTest().getSuite();
     }
 
+    @Override
     public void test() throws Exception {
         ClassReader cr = new ClassReader(is);
         ClassWriter cw1 = new ClassWriter(0);
@@ -65,12 +65,13 @@ public class AdviceAdapterTest extends AbstractTest {
                 new ClassReader(cw2.toByteArray()));
     }
 
-    static class ReferenceClassAdapter extends ClassAdapter {
+    static class ReferenceClassAdapter extends ClassVisitor {
 
         public ReferenceClassAdapter(final ClassVisitor cv) {
-            super(cv);
+            super(Opcodes.ASM4, cv);
         }
 
+        @Override
         public MethodVisitor visitMethod(
             final int access,
             final String name,
@@ -94,12 +95,13 @@ public class AdviceAdapterTest extends AbstractTest {
         }
     }
 
-    static class AdviceClassAdapter extends ClassAdapter {
+    static class AdviceClassAdapter extends ClassVisitor {
 
         public AdviceClassAdapter(final ClassVisitor cv) {
-            super(cv);
+            super(Opcodes.ASM4, cv);
         }
 
+        @Override
         public MethodVisitor visitMethod(
             final int access,
             final String name,
@@ -119,13 +121,16 @@ public class AdviceAdapterTest extends AbstractTest {
                 return mv;
             }
 
-            return new AdviceAdapter(mv, access, name, desc) {
+            return new AdviceAdapter(Opcodes.ASM4, mv, access, name, desc) {
+
+                @Override
                 protected void onMethodEnter() {
                     // mv.visitInsn(NOP);
                     // mv.visitInsn(NOP);
                     // mv.visitInsn(NOP);
                 }
 
+                @Override
                 protected void onMethodExit(final int opcode) {
                     // mv.visitInsn(NOP);
                     // mv.visitInsn(NOP);

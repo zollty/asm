@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,11 +32,12 @@ package org.objectweb.asm.commons;
 import junit.framework.TestSuite;
 
 import org.objectweb.asm.AbstractTest;
-import org.objectweb.asm.ClassAdapter;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 public class CodeSizeEvaluatorTest extends AbstractTest {
 
@@ -44,9 +45,11 @@ public class CodeSizeEvaluatorTest extends AbstractTest {
         return new CodeSizeEvaluatorTest().getSuite();
     }
 
+    @Override
     public void test() throws Exception {
         ClassReader cr = new ClassReader(is);
-        cr.accept(new ClassAdapter(new ClassWriter(0)) {
+        cr.accept(new ClassVisitor(Opcodes.ASM4, new ClassWriter(0)) {
+            @Override
             public MethodVisitor visitMethod(
                 final int access,
                 final String name,
@@ -60,6 +63,7 @@ public class CodeSizeEvaluatorTest extends AbstractTest {
                         signature,
                         exceptions);
                 return new CodeSizeEvaluator(mv) {
+                    @Override
                     public void visitMaxs(
                         final int maxStack,
                         final int maxLocals)

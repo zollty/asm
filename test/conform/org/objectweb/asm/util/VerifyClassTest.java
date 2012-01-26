@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,11 +36,10 @@ import junit.framework.TestSuite;
 
 import org.objectweb.asm.AbstractTest;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
 
 /**
  * CheckClassAdapter tests.
- * 
+ *
  * @author Eric Bruneton
  */
 public class VerifyClassTest extends AbstractTest {
@@ -49,6 +48,7 @@ public class VerifyClassTest extends AbstractTest {
         return new VerifyClassTest().getSuite();
     }
 
+    @Override
     public void test() throws Exception {
         if (n.startsWith("pkg.")) {
             return;

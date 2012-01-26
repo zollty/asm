@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,8 +32,8 @@ package org.objectweb.asm;
 import junit.framework.TestSuite;
 
 /**
- * ClassAdapter tests.
- * 
+ * ClassVisitor tests.
+ *
  * @author Eric Bruneton
  */
 public class ClassAdapterTest extends AbstractTest {
@@ -44,10 +44,74 @@ public class ClassAdapterTest extends AbstractTest {
         return new ClassAdapterTest().getSuite();
     }
 
+    @Override
     public void test() throws Exception {
         ClassReader cr = new ClassReader(is);
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-        cr.accept(new ClassAdapter(cw), 0);
+        cr.accept(new ClassVisitor(Opcodes.ASM4, cw) {
+
+            @Override
+            public FieldVisitor visitField(
+                int access,
+                String name,
+                String desc,
+                String signature,
+                Object value)
+            {
+                return new FieldVisitor(Opcodes.ASM4, super.visitField(access,
+                        name,
+                        desc,
+                        signature,
+                        value))
+                {
+                    @Override
+                    public AnnotationVisitor visitAnnotation(
+                        String desc,
+                        boolean visible)
+                    {
+                        return new AnnotationAdapter(super.visitAnnotation(desc, visible));
+                    }
+                };
+            }
+
+            @Override
+            public MethodVisitor visitMethod(
+                int access,
+                String name,
+                String desc,
+                String signature,
+                String[] exceptions)
+            {
+                return new MethodVisitor(Opcodes.ASM4, super.visitMethod(access,
+                        name,
+                        desc,
+                        signature,
+                        exceptions))
+                {
+                    @Override
+                    public AnnotationVisitor visitAnnotationDefault() {
+                        return new AnnotationAdapter(super.visitAnnotationDefault());
+                    }
+
+                    @Override
+                    public AnnotationVisitor visitAnnotation(
+                        String desc,
+                        boolean visible)
+                    {
+                        return new AnnotationAdapter(super.visitAnnotation(desc, visible));
+                    }
+
+                    @Override
+                    public AnnotationVisitor visitParameterAnnotation(
+                        int parameter,
+                        String desc,
+                        boolean visible)
+                    {
+                        return new AnnotationAdapter(super.visitParameterAnnotation(parameter, desc, visible));
+                    }
+                };
+            }
+        }, 0);
         byte[] b = cw.toByteArray();
         try {
             LOADER.defineClass(n, b);
@@ -57,11 +121,28 @@ public class ClassAdapterTest extends AbstractTest {
         }
     }
 
+    static class AnnotationAdapter extends AnnotationVisitor {
+
+        public AnnotationAdapter(final AnnotationVisitor av) {
+            super(Opcodes.ASM4, av);
+        }
+
+        @Override
+        public AnnotationVisitor visitAnnotation(String name, String desc) {
+            return new AnnotationAdapter(super.visitAnnotation(name, desc));
+        }
+
+        @Override
+        public AnnotationVisitor visitArray(String name) {
+            return new AnnotationAdapter(super.visitArray(name));
+        }
+    }
+
     // ------------------------------------------------------------------------
 
     static class TestClassLoader extends ClassLoader {
 
-        public Class defineClass(final String name, final byte[] b) {
+        public Class<?> defineClass(final String name, final byte[] b) {
             return defineClass(name, b, 0, b.length);
         }
     }

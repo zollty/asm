@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,13 +33,14 @@ import junit.framework.TestSuite;
 
 import org.objectweb.asm.AbstractTest;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.commons.EmptyVisitor;
+import org.objectweb.asm.Opcodes;
 
 /**
  * Signature tests.
- * 
+ *
  * @author Eric Bruneton
  */
 public class SignatureWriterTest extends AbstractTest {
@@ -48,9 +49,11 @@ public class SignatureWriterTest extends AbstractTest {
         return new SignatureWriterTest().getSuite();
     }
 
+    @Override
     public void test() throws Exception {
         ClassReader cr = new ClassReader(is);
-        cr.accept(new EmptyVisitor() {
+        cr.accept(new ClassVisitor(Opcodes.ASM4) {
+            @Override
             public void visit(
                 int version,
                 int access,
@@ -67,6 +70,7 @@ public class SignatureWriterTest extends AbstractTest {
                 }
             }
 
+            @Override
             public FieldVisitor visitField(
                 int access,
                 String name,
@@ -83,6 +87,7 @@ public class SignatureWriterTest extends AbstractTest {
                 return null;
             }
 
+            @Override
             public MethodVisitor visitMethod(
                 int access,
                 String name,

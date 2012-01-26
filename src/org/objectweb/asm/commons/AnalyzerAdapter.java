@@ -1,6 +1,6 @@
 /***
  * ASM: a very small and fast Java bytecode manipulation framework
- * Copyright (c) 2000-2007 INRIA, France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,14 +34,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodAdapter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 /**
- * A {@link MethodAdapter} that keeps track of stack map frame changes between
+ * A {@link MethodVisitor} that keeps track of stack map frame changes between
  * {@link #visitFrame(int, int, Object[], int, Object[]) visitFrame} calls. This
  * adapter must be used with the
  * {@link org.objectweb.asm.ClassReader#EXPAND_FRAMES} option. Each visit<i>X</i>
@@ -56,10 +56,10 @@ import org.objectweb.asm.Type;
  * compute the stack map frame for each instruction. In this case no exception
  * is thrown but the {@link #locals} and {@link #stack} fields will be null for
  * these instructions.
- * 
+ *
  * @author Eric Bruneton
  */
-public class AnalyzerAdapter extends MethodAdapter {
+public class AnalyzerAdapter extends MethodVisitor {
 
     /**
      * <code>List</code> of the local variable slots for current execution
@@ -73,7 +73,7 @@ public class AnalyzerAdapter extends MethodAdapter {
      * this uninitialized value). This field is <tt>null</tt> for unreacheable
      * instructions.
      */
-    public List locals;
+    public List<Object> locals;
 
     /**
      * <code>List</code> of the operand stack slots for current execution
@@ -87,13 +87,13 @@ public class AnalyzerAdapter extends MethodAdapter {
      * this uninitialized value). This field is <tt>null</tt> for unreacheable
      * instructions.
      */
-    public List stack;
+    public List<Object> stack;
 
     /**
      * The labels that designate the next instruction to be visited. May be
      * <tt>null</tt>.
      */
-    private List labels;
+    private List<Label> labels;
 
     /**
      * Information about uninitialized types in the current execution frame.
@@ -102,7 +102,7 @@ public class AnalyzerAdapter extends MethodAdapter {
      * types, and the associated internal name represents the NEW operand, i.e.
      * the final, initialized type value.
      */
-    public Map uninitializedTypes;
+    public Map<Object,Object> uninitializedTypes;
 
     /**
      * The maximum stack size of this method.
@@ -118,9 +118,12 @@ public class AnalyzerAdapter extends MethodAdapter {
      * The owner's class name.
      */
     private String owner;
-    
+
     /**
-     * Creates a new {@link AnalyzerAdapter}.
+     * Creates a new {@link AnalyzerAdapter}. <i>Subclasses must not use this
+     * constructor</i>. Instead, they must use the
+     * {@link #AnalyzerAdapter(int, String, int, String, String, MethodVisitor)}
+     * version.
      *
      * @param owner the owner's class name.
      * @param access the method's access flags (see {@link Opcodes}).
@@ -136,11 +139,34 @@ public class AnalyzerAdapter extends MethodAdapter {
         final String desc,
         final MethodVisitor mv)
     {
-        super(mv);
+        this(Opcodes.ASM4, owner, access, name, desc, mv);
+    }
+
+    /**
+     * Creates a new {@link AnalyzerAdapter}.
+     *
+     * @param api the ASM API version implemented by this visitor. Must be one
+     *        of {@link Opcodes#ASM4}.
+     * @param owner the owner's class name.
+     * @param access the method's access flags (see {@link Opcodes}).
+     * @param name the method's name.
+     * @param desc the method's descriptor (see {@link Type Type}).
+     * @param mv the method visitor to which this adapter delegates calls. May
+     *        be <tt>null</tt>.
+     */
+    protected AnalyzerAdapter(
+        final int api,
+        final String owner,
+        final int access,
+        final String name,
+        final String desc,
+        final MethodVisitor mv)
+    {
+        super(api, mv);
         this.owner = owner;
-        locals = new ArrayList();
-        stack = new ArrayList();
-        uninitializedTypes = new HashMap();
+        locals = new ArrayList<Object>();
+        stack = new ArrayList<Object>();
+        uninitializedTypes = new HashMap<Object, Object>();
 
         if ((access & Opcodes.ACC_STATIC) == 0) {
             if ("<init>".equals(name)) {
@@ -181,6 +207,7 @@ public class AnalyzerAdapter extends MethodAdapter {
         }
     }
 
+    @Override
     public void visitFrame(
         final int type,
         final int nLocal,
@@ -200,8 +227,8 @@ public class AnalyzerAdapter extends MethodAdapter {
             this.locals.clear();
             this.stack.clear();
         } else {
-            this.locals = new ArrayList();
-            this.stack = new ArrayList();
+            this.locals = new ArrayList<Object>();
+            this.stack = new ArrayList<Object>();
         }
         visitFrameTypes(nLocal, local, this.locals);
         visitFrameTypes(nStack, stack, this.stack);
@@ -211,7 +238,7 @@ public class AnalyzerAdapter extends MethodAdapter {
     private static void visitFrameTypes(
         final int n,
         final Object[] types,
-        final List result)
+        final List<Object> result)
     {
         for (int i = 0; i < n; ++i) {
             Object type = types[i];
@@ -222,6 +249,7 @@ public class AnalyzerAdapter extends MethodAdapter {
         }
     }
 
+    @Override
     public void visitInsn(final int opcode) {
         if (mv != null) {
             mv.visitInsn(opcode);
@@ -235,6 +263,7 @@ public class AnalyzerAdapter extends MethodAdapter {
         }
     }
 
+    @Override
     public void visitIntInsn(final int opcode, final int operand) {
         if (mv != null) {
             mv.visitIntInsn(opcode, operand);
@@ -242,6 +271,7 @@ public class AnalyzerAdapter extends MethodAdapter {
         execute(opcode, operand, null);
     }
 
+    @Override
     public void visitVarInsn(final int opcode, final int var) {
         if (mv != null) {
             mv.visitVarInsn(opcode, var);
@@ -249,11 +279,12 @@ public class AnalyzerAdapter extends MethodAdapter {
         execute(opcode, var, null);
     }
 
+    @Override
     public void visitTypeInsn(final int opcode, final String type) {
         if (opcode == Opcodes.NEW) {
             if (labels == null) {
                 Label l = new Label();
-                labels = new ArrayList(3);
+                labels = new ArrayList<Label>(3);
                 labels.add(l);
                 if (mv != null) {
                     mv.visitLabel(l);
@@ -269,6 +300,7 @@ public class AnalyzerAdapter extends MethodAdapter {
         execute(opcode, 0, type);
     }
 
+    @Override
     public void visitFieldInsn(
         final int opcode,
         final String owner,
@@ -281,6 +313,7 @@ public class AnalyzerAdapter extends MethodAdapter {
         execute(opcode, 0, desc);
     }
 
+    @Override
     public void visitMethodInsn(
         final int opcode,
         final String owner,
@@ -295,7 +328,7 @@ public class AnalyzerAdapter extends MethodAdapter {
             return;
         }
         pop(desc);
-        if (opcode != Opcodes.INVOKESTATIC && opcode != Opcodes.INVOKEDYNAMIC) {
+        if (opcode != Opcodes.INVOKESTATIC) {
             Object t = pop();
             if (opcode == Opcodes.INVOKESPECIAL && name.charAt(0) == '<') {
                 Object u;
@@ -320,6 +353,26 @@ public class AnalyzerAdapter extends MethodAdapter {
         labels = null;
     }
 
+    @Override
+    public void visitInvokeDynamicInsn(
+        String name,
+        String desc,
+        Handle bsm,
+        Object... bsmArgs)
+    {
+        if (mv != null) {
+            mv.visitInvokeDynamicInsn(name, desc, bsm, bsmArgs);
+        }
+        if (this.locals == null) {
+            labels = null;
+            return;
+        }
+        pop(desc);
+        pushDesc(desc);
+        labels = null;
+    }
+
+    @Override
     public void visitJumpInsn(final int opcode, final Label label) {
         if (mv != null) {
             mv.visitJumpInsn(opcode, label);
@@ -331,16 +384,18 @@ public class AnalyzerAdapter extends MethodAdapter {
         }
     }
 
+    @Override
     public void visitLabel(final Label label) {
         if (mv != null) {
             mv.visitLabel(label);
         }
         if (labels == null) {
-            labels = new ArrayList(3);
+            labels = new ArrayList<Label>(3);
         }
         labels.add(label);
     }
 
+    @Override
     public void visitLdcInsn(final Object cst) {
         if (mv != null) {
             mv.visitLdcInsn(cst);
@@ -362,13 +417,23 @@ public class AnalyzerAdapter extends MethodAdapter {
         } else if (cst instanceof String) {
             push("java/lang/String");
         } else if (cst instanceof Type) {
-            push("java/lang/Class");
+            int sort = ((Type) cst).getSort();
+            if (sort == Type.OBJECT || sort == Type.ARRAY) {
+                push("java/lang/Class");
+            } else if (sort == Type.METHOD) {
+                push("java/lang/invoke/MethodType");
+            } else {
+                throw new IllegalArgumentException();
+            }
+        } else if (cst instanceof Handle) {
+            push("java/lang/invoke/MethodHandle");
         } else {
             throw new IllegalArgumentException();
         }
         labels = null;
     }
 
+    @Override
     public void visitIincInsn(final int var, final int increment) {
         if (mv != null) {
             mv.visitIincInsn(var, increment);
@@ -376,11 +441,12 @@ public class AnalyzerAdapter extends MethodAdapter {
         execute(Opcodes.IINC, var, null);
     }
 
+    @Override
     public void visitTableSwitchInsn(
         final int min,
         final int max,
         final Label dflt,
-        final Label[] labels)
+        final Label... labels)
     {
         if (mv != null) {
             mv.visitTableSwitchInsn(min, max, dflt, labels);
@@ -390,6 +456,7 @@ public class AnalyzerAdapter extends MethodAdapter {
         this.stack = null;
     }
 
+    @Override
     public void visitLookupSwitchInsn(
         final Label dflt,
         final int[] keys,
@@ -403,6 +470,7 @@ public class AnalyzerAdapter extends MethodAdapter {
         this.stack = null;
     }
 
+    @Override
     public void visitMultiANewArrayInsn(final String desc, final int dims) {
         if (mv != null) {
             mv.visitMultiANewArrayInsn(desc, dims);
@@ -410,6 +478,7 @@ public class AnalyzerAdapter extends MethodAdapter {
         execute(Opcodes.MULTIANEWARRAY, dims, desc);
     }
 
+    @Override
     public void visitMaxs(final int maxStack, final int maxLocals) {
         if (mv != null) {
             this.maxStack = Math.max(this.maxStack, maxStack);

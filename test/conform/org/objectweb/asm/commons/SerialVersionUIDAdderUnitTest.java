@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,14 +32,14 @@ package org.objectweb.asm.commons;
 import java.io.IOException;
 import java.io.Serializable;
 
+import junit.framework.TestCase;
+
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 
-import junit.framework.TestCase;
-
 /**
  * Test for the SerialVerionUid computation.
- * 
+ *
  * @author Alexandre Vasseur
  * @author Eric Bruneton
  */
@@ -50,7 +50,7 @@ public class SerialVersionUIDAdderUnitTest extends TestCase implements
     protected final static int aField = 32;
 
     static {
-        System.gc();
+        System.setIn(System.in);
     }
 
     public Object[] aMethod() {
@@ -61,7 +61,8 @@ public class SerialVersionUIDAdderUnitTest extends TestCase implements
             throws IOException
     {
         final long[] svuid = new long[1];
-        ClassVisitor cv = new SerialVersionUIDAdder(new EmptyVisitor()) {
+        ClassVisitor cv = new SerialVersionUIDAdder(null) {
+            @Override
             protected long computeSVUID() throws IOException {
                 svuid[0] = super.computeSVUID();
                 return svuid[0];

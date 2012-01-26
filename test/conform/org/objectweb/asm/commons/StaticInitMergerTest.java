@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,16 +29,16 @@
  */
 package org.objectweb.asm.commons;
 
+import junit.framework.TestCase;
+
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import junit.framework.TestCase;
-
 /**
  * StaticInitMerger tests.
- * 
+ *
  * @author Eric Bruneton
  */
 public class StaticInitMergerTest extends TestCase implements Opcodes {
@@ -74,7 +74,7 @@ public class StaticInitMergerTest extends TestCase implements Opcodes {
         mv.visitMaxs(0, 0);
         cv.visitEnd();
 
-        Class c = LOADER.defineClass("A", cw.toByteArray());
+        Class<?> c = LOADER.defineClass("A", cw.toByteArray());
         assertEquals(c.getField("counter").getInt(c.newInstance()), 5);
     }
 
@@ -82,7 +82,7 @@ public class StaticInitMergerTest extends TestCase implements Opcodes {
 
     static class TestClassLoader extends ClassLoader {
 
-        public Class defineClass(final String name, final byte[] b) {
+        public Class<?> defineClass(final String name, final byte[] b) {
             return defineClass(name, b, 0, b.length);
         }
     }

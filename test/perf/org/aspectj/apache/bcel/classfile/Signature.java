@@ -54,8 +54,12 @@ package org.aspectj.apache.bcel.classfile;
  * <http://www.apache.org/>.
  */
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
 import org.apache.bcel.Constants;
-import java.io.*;
 
 /**
  * This class is derived from <em>Attribute</em> and represents a reference to
@@ -122,6 +126,7 @@ public final class Signature extends Attribute {
      * 
      * @param v Visitor object
      */
+    @Override
     public void accept(final Visitor v) {
         // System.err.println("Visiting non-standard Signature object");
         // v.visitSignature(this);
@@ -133,6 +138,7 @@ public final class Signature extends Attribute {
      * @param file Output file stream
      * @throws IOException
      */
+    @Override
     public final void dump(final DataOutputStream file) throws IOException {
         super.dump(file);
         file.writeShort(signature_index);
@@ -324,6 +330,7 @@ public final class Signature extends Attribute {
     /**
      * @return String representation
      */
+    @Override
     public final String toString() {
         String s = getSignature();
 
@@ -334,6 +341,7 @@ public final class Signature extends Attribute {
      * @param constant_pool
      * @return deep copy of this attribute
      */
+    @Override
     public Attribute copy(final ConstantPool constant_pool) {
         return (Signature) clone();
     }

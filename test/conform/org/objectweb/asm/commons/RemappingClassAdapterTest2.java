@@ -1,6 +1,6 @@
 /***
  * ASM: a very small and fast Java bytecode manipulation framework
- * Copyright (c) 2000-2007 INRIA, France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -45,16 +45,18 @@ public class RemappingClassAdapterTest2 extends AbstractTest {
         return new RemappingClassAdapterTest2().getSuite();
     }
 
+    @Override
     public void test() throws Exception {
         ClassWriter cw = new ClassWriter(0);
         ClassReader cr = new ClassReader(is);
-        Map map = new HashMap() {
-            public Object get(Object key) {
+        Map<String, String> map = new HashMap<String, String>() {
+            @Override
+            public String get(Object key) {
                 return "Foo";
             }
         };
         cr.accept(new RemappingClassAdapter(cw, new SimpleRemapper(map)), ClassReader.EXPAND_FRAMES);
     }
-    
+
 }
 

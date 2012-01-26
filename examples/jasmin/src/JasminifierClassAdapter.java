@@ -1,6 +1,6 @@
 /***
  * ASM: a very small and fast Java bytecode manipulation framework
- * Copyright (c) 2000-2005 INRIA, France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,13 +34,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.objectweb.asm.ClassAdapter;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.EmptyVisitor;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -48,10 +47,9 @@ import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InnerClassNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LocalVariableNode;
-import org.objectweb.asm.tree.MemberNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
-import org.objectweb.asm.util.AbstractVisitor;
+import org.objectweb.asm.util.Printer;
 
 /**
  * A {@link ClassVisitor} that prints a disassembled view of the classes it
@@ -100,7 +98,7 @@ import org.objectweb.asm.util.AbstractVisitor;
  *
  * @author Eric Bruneton
  */
-public class JasminifierClassAdapter extends ClassAdapter {
+public class JasminifierClassAdapter extends ClassVisitor {
 
     /**
      * The print writer to be used to print the class.
@@ -110,7 +108,7 @@ public class JasminifierClassAdapter extends ClassAdapter {
     /**
      * The label names. This map associate String values to Label keys.
      */
-    protected final Map labelNames;
+    protected final Map<Label, String> labelNames;
 
     /**
      * Prints a disassembled view of the given class in Jasmin assembler format
@@ -165,7 +163,8 @@ public class JasminifierClassAdapter extends ClassAdapter {
      */
     public JasminifierClassAdapter(final PrintWriter pw, final ClassVisitor cv)
     {
-        super(new ClassNode() {
+        super(Opcodes.ASM4, new ClassNode() {
+            @Override
             public void visitEnd() {
                 if (cv != null) {
                     accept(cv);
@@ -173,9 +172,10 @@ public class JasminifierClassAdapter extends ClassAdapter {
             }
         });
         this.pw = pw;
-        labelNames = new HashMap();
+        labelNames = new HashMap<Label, String>();
     }
 
+    @Override
     public void visitEnd() {
         ClassNode cn = (ClassNode) cv;
         pw.print(".bytecode ");
@@ -193,7 +193,7 @@ public class JasminifierClassAdapter extends ClassAdapter {
             println(".super ", cn.superName);
         }
         for (int i = 0; i < cn.interfaces.size(); ++i) {
-            println(".implements ", (String) cn.interfaces.get(i));
+            println(".implements ", cn.interfaces.get(i));
         }
         if (cn.signature != null)
             println(".signature ", '"' + cn.signature + '"');
@@ -211,13 +211,14 @@ public class JasminifierClassAdapter extends ClassAdapter {
         if ((cn.access & Opcodes.ACC_DEPRECATED) != 0) {
             pw.println(".deprecated");
         }
-        printAnnotations(cn);
+        printAnnotations(cn.visibleAnnotations, 1);
+        printAnnotations(cn.invisibleAnnotations, 2);
         println(".debug ", cn.sourceDebug == null
                 ? null
                 : '"' + cn.sourceDebug + '"');
 
         for (int i = 0; i < cn.innerClasses.size(); ++i) {
-            InnerClassNode in = (InnerClassNode) cn.innerClasses.get(i);
+            InnerClassNode in = cn.innerClasses.get(i);
             pw.print(".inner class");
             pw.print(access(in.access));
             if (in.innerName != null) {
@@ -236,7 +237,7 @@ public class JasminifierClassAdapter extends ClassAdapter {
         }
 
         for (int i = 0; i < cn.fields.size(); ++i) {
-            FieldNode fn = (FieldNode) cn.fields.get(i);
+            FieldNode fn = cn.fields.get(i);
             boolean annotations = false;
             if (fn.visibleAnnotations != null
                     && fn.visibleAnnotations.size() > 0)
@@ -262,7 +263,7 @@ public class JasminifierClassAdapter extends ClassAdapter {
             }
             if (fn.value instanceof String) {
                 StringBuffer buf = new StringBuffer();
-                AbstractVisitor.appendString(buf, (String) fn.value);
+                Printer.appendString(buf, (String) fn.value);
                 pw.print(" = ");
                 pw.print(buf.toString());
             } else if (fn.value != null) {
@@ -279,14 +280,15 @@ public class JasminifierClassAdapter extends ClassAdapter {
             if (deprecated) {
                 pw.println(".deprecated");
             }
-            printAnnotations(fn);
+            printAnnotations(fn.visibleAnnotations, 1);
+            printAnnotations(fn.invisibleAnnotations, 2);
             if (deprecated || annotations) {
                 pw.println(".end field");
             }
         }
 
         for (int i = 0; i < cn.methods.size(); ++i) {
-            MethodNode mn = (MethodNode) cn.methods.get(i);
+            MethodNode mn = cn.methods.get(i);
             pw.print("\n.method");
             pw.print(access(mn.access));
             pw.print(' ');
@@ -302,31 +304,22 @@ public class JasminifierClassAdapter extends ClassAdapter {
                 printAnnotationValue(mn.annotationDefault);
                 pw.println(".end annotation");
             }
-            printAnnotations(mn);
+            printAnnotations(mn.visibleAnnotations, 1);
+            printAnnotations(mn.invisibleAnnotations, 2);
             if (mn.visibleParameterAnnotations != null) {
                 for (int j = 0; j < mn.visibleParameterAnnotations.length; ++j)
                 {
-                    List l = mn.visibleParameterAnnotations[j];
-                    if (l != null) {
-                        for (int k = 0; k < l.size(); ++k) {
-                            printAnnotation((AnnotationNode) l.get(k), 1, j + 1);
-                        }
-                    }
+                    printAnnotations(mn.visibleParameterAnnotations[j], 1);
                 }
             }
             if (mn.invisibleParameterAnnotations != null) {
                 for (int j = 0; j < mn.invisibleParameterAnnotations.length; ++j)
                 {
-                    List l = mn.invisibleParameterAnnotations[j];
-                    if (l != null) {
-                        for (int k = 0; k < l.size(); ++k) {
-                            printAnnotation((AnnotationNode) l.get(k), 2, j + 1);
-                        }
-                    }
+                    printAnnotations(mn.invisibleParameterAnnotations[j], 2);
                 }
             }
             for (int j = 0; j < mn.exceptions.size(); ++j) {
-                println(".throws ", (String) mn.exceptions.get(j));
+                println(".throws ", mn.exceptions.get(j));
             }
             if ((mn.access & Opcodes.ACC_DEPRECATED) != 0) {
                 pw.println(".deprecated");
@@ -334,7 +327,7 @@ public class JasminifierClassAdapter extends ClassAdapter {
             if (mn.instructions.size() > 0) {
                 labelNames.clear();
                 for (int j = 0; j < mn.tryCatchBlocks.size(); ++j) {
-                    TryCatchBlockNode tcb = (TryCatchBlockNode) mn.tryCatchBlocks.get(j);
+                    TryCatchBlockNode tcb = mn.tryCatchBlocks.get(j);
                     pw.print(".catch ");
                     pw.print(tcb.type);
                     pw.print(" from ");
@@ -347,8 +340,9 @@ public class JasminifierClassAdapter extends ClassAdapter {
                 }
                 for (int j = 0; j < mn.instructions.size(); ++j) {
                     AbstractInsnNode in = mn.instructions.get(j);
-                    in.accept(new EmptyVisitor() {
+                    in.accept(new MethodVisitor(Opcodes.ASM4) {
 
+                        @Override
                         public void visitFrame(
                             int type,
                             int local,
@@ -374,11 +368,13 @@ public class JasminifierClassAdapter extends ClassAdapter {
                             pw.println(".end stack");
                         }
 
+                        @Override
                         public void visitInsn(int opcode) {
                             print(opcode);
                             pw.println();
                         }
 
+                        @Override
                         public void visitIntInsn(int opcode, int operand) {
                             print(opcode);
                             if (opcode == Opcodes.NEWARRAY) {
@@ -415,18 +411,21 @@ public class JasminifierClassAdapter extends ClassAdapter {
                             }
                         }
 
+                        @Override
                         public void visitVarInsn(int opcode, int var) {
                             print(opcode);
                             pw.print(' ');
                             pw.println(var);
                         }
 
+                        @Override
                         public void visitTypeInsn(int opcode, String type) {
                             print(opcode);
                             pw.print(' ');
                             pw.println(type);
                         }
 
+                        @Override
                         public void visitFieldInsn(
                             int opcode,
                             String owner,
@@ -442,6 +441,7 @@ public class JasminifierClassAdapter extends ClassAdapter {
                             pw.println(desc);
                         }
 
+                        @Override
                         public void visitMethodInsn(
                             int opcode,
                             String owner,
@@ -461,6 +461,7 @@ public class JasminifierClassAdapter extends ClassAdapter {
                             pw.println();
                         }
 
+                        @Override
                         public void visitJumpInsn(int opcode, Label label) {
                             print(opcode);
                             pw.print(' ');
@@ -468,11 +469,13 @@ public class JasminifierClassAdapter extends ClassAdapter {
                             pw.println();
                         }
 
+                        @Override
                         public void visitLabel(Label label) {
                             print(label);
                             pw.println(':');
                         }
 
+                        @Override
                         public void visitLdcInsn(Object cst) {
                             pw.print("ldc ");
                             if (cst instanceof Type) {
@@ -483,6 +486,7 @@ public class JasminifierClassAdapter extends ClassAdapter {
                             pw.println();
                         }
 
+                        @Override
                         public void visitIincInsn(int var, int increment) {
                             pw.print("iinc ");
                             pw.print(var);
@@ -490,11 +494,12 @@ public class JasminifierClassAdapter extends ClassAdapter {
                             pw.println(increment);
                         }
 
+                        @Override
                         public void visitTableSwitchInsn(
                             int min,
                             int max,
                             Label dflt,
-                            Label[] labels)
+                            Label... labels)
                         {
                             pw.print("tableswitch ");
                             pw.println(min);
@@ -507,6 +512,7 @@ public class JasminifierClassAdapter extends ClassAdapter {
                             pw.println();
                         }
 
+                        @Override
                         public void visitLookupSwitchInsn(
                             Label dflt,
                             int[] keys,
@@ -531,6 +537,7 @@ public class JasminifierClassAdapter extends ClassAdapter {
                             pw.println();
                         }
 
+                        @Override
                         public void visitMultiANewArrayInsn(
                             String desc,
                             int dims)
@@ -541,6 +548,7 @@ public class JasminifierClassAdapter extends ClassAdapter {
                             pw.println(dims);
                         }
 
+                        @Override
                         public void visitLineNumber(int line, Label start) {
                             pw.print(".line ");
                             pw.println(line);
@@ -548,7 +556,7 @@ public class JasminifierClassAdapter extends ClassAdapter {
                     });
                 }
                 for (int j = 0; j < mn.localVariables.size(); ++j) {
-                    LocalVariableNode lv = (LocalVariableNode) mn.localVariables.get(j);
+                    LocalVariableNode lv = mn.localVariables.get(j);
                     pw.print(".var ");
                     pw.print(lv.index);
                     pw.print(" is '");
@@ -632,13 +640,13 @@ public class JasminifierClassAdapter extends ClassAdapter {
     }
 
     protected void print(final int opcode) {
-        pw.print(AbstractVisitor.OPCODES[opcode].toLowerCase());
+        pw.print(Printer.OPCODES[opcode].toLowerCase());
     }
 
     protected void print(final Object cst) {
         if (cst instanceof String) {
             StringBuffer buf = new StringBuffer();
-            AbstractVisitor.appendString(buf, (String) cst);
+            Printer.appendString(buf, (String) cst);
             pw.print(buf.toString());
         } else if (cst instanceof Float) {
             Float f = (Float) cst;
@@ -660,7 +668,7 @@ public class JasminifierClassAdapter extends ClassAdapter {
     }
 
     protected void print(final Label l) {
-        String name = (String) labelNames.get(l);
+        String name = labelNames.get(l);
         if (name == null) {
             name = "L" + labelNames.size();
             labelNames.put(l, name);
@@ -672,18 +680,11 @@ public class JasminifierClassAdapter extends ClassAdapter {
         print(l.getLabel());
     }
 
-    protected void printAnnotations(final MemberNode n) {
-        if (n.visibleAnnotations != null) {
-            for (int j = 0; j < n.visibleAnnotations.size(); ++j) {
-                printAnnotation((AnnotationNode) n.visibleAnnotations.get(j),
-                        1,
-                        -1);
-            }
-        }
-        if (n.invisibleAnnotations != null) {
-            for (int j = 0; j < n.invisibleAnnotations.size(); ++j) {
-                printAnnotation((AnnotationNode) n.invisibleAnnotations.get(j),
-                        2,
+    protected void printAnnotations(final List<AnnotationNode> annotations, int visible) {
+        if (annotations != null) {
+            for (int j = 0; j < annotations.size(); ++j) {
+                printAnnotation(annotations.get(j),
+                        visible,
                         -1);
             }
         }
@@ -793,7 +794,7 @@ public class JasminifierClassAdapter extends ClassAdapter {
             }
             pw.println();
         } else if (value instanceof List) {
-            List l = (List) value;
+            List<?> l = (List<?>) value;
             if (l.size() > 0) {
                 Object o = l.get(0);
                 if (o instanceof String[]) {

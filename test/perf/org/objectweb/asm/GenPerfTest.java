@@ -1,6 +1,6 @@
 /***
  * ASM: a very small and fast Java bytecode manipulation framework
- * Copyright (c) 2000-2005 INRIA, France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -52,11 +52,9 @@ import org.apache.bcel.generic.ClassGen;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.MethodGen;
 import org.apache.bcel.generic.PUSH;
-
 import org.cojen.classfile.MethodInfo;
 import org.cojen.classfile.Modifiers;
 import org.cojen.classfile.TypeDesc;
-
 import org.gjt.jclasslib.bytecode.ImmediateByteInstruction;
 import org.gjt.jclasslib.bytecode.ImmediateShortInstruction;
 import org.gjt.jclasslib.bytecode.SimpleInstruction;
@@ -69,7 +67,6 @@ import org.gjt.jclasslib.structures.InvalidByteCodeException;
 import org.gjt.jclasslib.structures.attributes.CodeAttribute;
 import org.gjt.jclasslib.structures.attributes.SourceFileAttribute;
 import org.gjt.jclasslib.structures.constants.ConstantStringInfo;
-
 import org.mozilla.classfile.ByteCode;
 import org.mozilla.classfile.ClassFileWriter;
 
@@ -88,7 +85,7 @@ import com.claritysys.jvm.classfile.JVM;
 
 /**
  * Performance tests for frameworks that can only do bytecode generation.
- * 
+ *
  * @author Eric Bruneton
  */
 public class GenPerfTest {

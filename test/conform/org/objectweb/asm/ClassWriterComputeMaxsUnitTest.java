@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -42,11 +42,9 @@ import java.util.StringTokenizer;
 
 import junit.framework.TestCase;
 
-import org.objectweb.asm.commons.EmptyVisitor;
-
 /**
  * ClassWriter unit tests for COMPUTE_MAXS option with JSR instructions.
- * 
+ *
  * @author Eric Bruneton
  */
 public class ClassWriterComputeMaxsUnitTest extends TestCase {
@@ -65,18 +63,24 @@ public class ClassWriterComputeMaxsUnitTest extends TestCase {
 
     private Label start;
 
+    @Override
     protected void setUp() throws Exception {
-        Class lClass = Label.class;
-        Class eClass = Edge.class;
+        Class<?> lClass = Label.class;
+        Class<?> eClass = Edge.class;
         try {
             successors = lClass.getDeclaredField("successors");
             successor = lClass.getDeclaredField("successor");
             succ = eClass.getDeclaredField("successor");
             next = eClass.getDeclaredField("next");
-        } catch (Exception exception) {
+        } catch (RuntimeException exception) {
             String f = "src/org/objectweb/asm/optimizer/shrink.properties";
             Properties p = new Properties();
-            p.load(new FileInputStream(f));
+            FileInputStream is = new FileInputStream(f);
+            try {
+                p.load(is);
+            } finally {
+                is.close();
+            }
             String l = Type.getInternalName(lClass) + ".";
             String e = Type.getInternalName(eClass) + ".";
             successors = lClass.getDeclaredField(p.getProperty(l + "successors"));
@@ -110,7 +114,7 @@ public class ClassWriterComputeMaxsUnitTest extends TestCase {
     protected boolean isComputeMaxs() {
         return true;
     }
-    
+
     private void NOP() {
         mv.visitInsn(Opcodes.NOP);
     }
@@ -193,7 +197,8 @@ public class ClassWriterComputeMaxsUnitTest extends TestCase {
         cw.visitEnd();
         byte[] b = cw.toByteArray();
         ClassReader cr = new ClassReader(b);
-        cr.accept(new EmptyVisitor() {
+        cr.accept(new ClassVisitor(Opcodes.ASM4) {
+            @Override
             public MethodVisitor visitMethod(
                 final int access,
                 final String name,
@@ -202,7 +207,8 @@ public class ClassWriterComputeMaxsUnitTest extends TestCase {
                 final String[] exceptions)
             {
                 if (name.equals("m")) {
-                    return new EmptyVisitor() {
+                    return new MethodVisitor(Opcodes.ASM4) {
+                        @Override
                         public void visitMaxs(
                             final int realMaxStack,
                             final int realMaxLocals)
@@ -212,7 +218,7 @@ public class ClassWriterComputeMaxsUnitTest extends TestCase {
                         }
                     };
                 } else {
-                    return new EmptyVisitor();
+                    return null;
                 }
             }
         },
@@ -220,7 +226,7 @@ public class ClassWriterComputeMaxsUnitTest extends TestCase {
 
         try {
             TestClassLoader loader = new TestClassLoader();
-            Class c = loader.defineClass("C", b);
+            Class<?> c = loader.defineClass("C", b);
             c.newInstance();
         } catch (Throwable t) {
             fail(t.getMessage());
@@ -228,31 +234,32 @@ public class ClassWriterComputeMaxsUnitTest extends TestCase {
     }
 
     protected void assertGraph(final String graph) {
-        Map expected = new HashMap();
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>();
         Properties p = new Properties();
         try {
             p.load(new ByteArrayInputStream(graph.getBytes()));
         } catch (Exception e) {
             fail();
         }
-        Iterator i = p.keySet().iterator();
+        Iterator<Map.Entry<Object,Object>> i = p.entrySet().iterator();
         while (i.hasNext()) {
-            String key = (String) i.next();
-            String value = p.getProperty(key);
+            Map.Entry<Object,Object> entry = i.next();
+            String key = (String) entry.getKey();
+            String value = (String) entry.getValue();
             StringTokenizer st = new StringTokenizer(value, ",");
-            Set s = new HashSet();
+            Set<String> s = new HashSet<String>();
             while (st.hasMoreTokens()) {
                 s.add(st.nextToken());
             }
             expected.put(key, s);
         }
 
-        Map actual = new HashMap();
+        Map<String, Set<String>> actual = new HashMap<String, Set<String>>();
         try {
             Label l = start;
             while (l != null) {
                 String key = "N" + l.getOffset();
-                Set value = new HashSet();
+                Set<String> value = new HashSet<String>();
                 Edge e = (Edge) successors.get(l);
                 while (e != null) {
                     value.add("N" + ((Label) succ.get(e)).getOffset());
@@ -261,7 +268,7 @@ public class ClassWriterComputeMaxsUnitTest extends TestCase {
                 actual.put(key, value);
                 l = (Label) successor.get(l);
             }
-        } catch (Exception e) {
+        } catch (IllegalAccessException e) {
             fail();
         }
 
@@ -273,7 +280,7 @@ public class ClassWriterComputeMaxsUnitTest extends TestCase {
         public TestClassLoader() {
         }
 
-        public Class defineClass(final String name, final byte[] b) {
+        public Class<?> defineClass(final String name, final byte[] b) {
             return defineClass(name, b, 0, b.length);
         }
     }
@@ -281,7 +288,7 @@ public class ClassWriterComputeMaxsUnitTest extends TestCase {
     /**
      * Tests a method which has the most basic <code>try{}finally</code> form
      * imaginable:
-     * 
+     *
      * <pre>
      *   public void a() {
      *     int a = 0;
@@ -342,7 +349,7 @@ public class ClassWriterComputeMaxsUnitTest extends TestCase {
 
     /**
      * Tests a method which has an if/else-if w/in the finally clause:
-     * 
+     *
      * <pre>
      *   public void a() {
      *     int a = 0;
@@ -417,7 +424,7 @@ public class ClassWriterComputeMaxsUnitTest extends TestCase {
 
     /**
      * Tests a simple nested finally:
-     * 
+     *
      * <pre>
      * public void a1() {
      *   int a = 0;
@@ -498,11 +505,11 @@ public class ClassWriterComputeMaxsUnitTest extends TestCase {
     /**
      * This tests a subroutine which has no ret statement, but ends in a
      * "return" instead.
-     * 
+     *
      * We structure this as a try/finally with a break in the finally. Because
      * the while loop is infinite, it's clear from the byte code that the only
      * path which reaches the RETURN instruction is through the subroutine.
-     * 
+     *
      * <pre>
      * public void a1() {
      *   int a = 0;
@@ -567,14 +574,14 @@ public class ClassWriterComputeMaxsUnitTest extends TestCase {
     /**
      * This tests a subroutine which has no ret statement, but ends in a
      * "return" instead.
-     * 
+     *
      * <pre>
      *   ACONST_NULL
      *   JSR L0
      * L0:
-     *   ASTORE 0 
      *   ASTORE 0
-     *   RETURN 
+     *   ASTORE 0
+     *   RETURN
      * </pre>
      */
     public void testSubroutineWithNoRet2() {
@@ -599,11 +606,11 @@ public class ClassWriterComputeMaxsUnitTest extends TestCase {
      * This tests a subroutine which has no ret statement, but instead exits
      * implicitely by branching to code which is not part of the subroutine.
      * (Sadly, this is legal)
-     * 
+     *
      * We structure this as a try/finally in a loop with a break in the finally.
      * The loop is not trivially infinite, so the RETURN statement is reachable
      * both from the JSR subroutine and from the main entry point.
-     * 
+     *
      * <pre>
      * public void a1() {
      *   int a = 0;
@@ -674,7 +681,7 @@ public class ClassWriterComputeMaxsUnitTest extends TestCase {
     /**
      * Tests a nested try/finally with implicit exit from one subroutine to the
      * other subroutine. Equivalent to the following java code:
-     * 
+     *
      * <pre>
      * void m(boolean b) {
      *   try {
@@ -691,7 +698,7 @@ public class ClassWriterComputeMaxsUnitTest extends TestCase {
      *   }
      * }
      * </pre>
-     * 
+     *
      * This example is from the paper, "Subroutine Inlining and Bytecode
      * Abstraction to Simplify Static and Dynamic Analysis" by Cyrille Artho and
      * Armin Biere.
@@ -809,7 +816,7 @@ public class ClassWriterComputeMaxsUnitTest extends TestCase {
     /**
      * This tests a simple subroutine where the control flow jumps back and
      * forth between the subroutine and the caller.
-     * 
+     *
      * This would not normally be produced by a java compiler.
      */
     public void testInterleavedCode() {
@@ -856,7 +863,7 @@ public class ClassWriterComputeMaxsUnitTest extends TestCase {
      * Tests a nested try/finally with implicit exit from one subroutine to the
      * other subroutine, and with a surrounding try/catch thrown in the mix.
      * Equivalent to the following java code:
-     * 
+     *
      * <pre>
      * void m(int b) {
      *   try {
@@ -871,7 +878,7 @@ public class ClassWriterComputeMaxsUnitTest extends TestCase {
      *           if (b) break;
      *         }
      *       }
-     *     } 
+     *     }
      *   } catch (Exception e) {
      *     b += 3;
      *     return;

@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,14 +32,15 @@ package org.objectweb.asm.commons;
 import junit.framework.TestSuite;
 
 import org.objectweb.asm.AbstractTest;
-import org.objectweb.asm.ClassAdapter;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 /**
  * LocalVariableSorter tests.
- * 
+ *
  * @author Eric Bruneton
  */
 public class LocalVariablesSorterTest extends AbstractTest {
@@ -50,10 +51,12 @@ public class LocalVariablesSorterTest extends AbstractTest {
         return new LocalVariablesSorterTest().getSuite();
     }
 
+    @Override
     public void test() throws Exception {
         ClassReader cr = new ClassReader(is);
         ClassWriter cw = new ClassWriter(0);
-        cr.accept(new ClassAdapter(cw) {
+        cr.accept(new ClassVisitor(Opcodes.ASM4, cw) {
+            @Override
             public MethodVisitor visitMethod(
                 final int access,
                 final String name,
@@ -83,7 +86,7 @@ public class LocalVariablesSorterTest extends AbstractTest {
 
     static class TestClassLoader extends ClassLoader {
 
-        public Class defineClass(final String name, final byte[] b) {
+        public Class<?> defineClass(final String name, final byte[] b) {
             return defineClass(name, b, 0, b.length);
         }
     }

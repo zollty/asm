@@ -1,6 +1,6 @@
 /***
  * ASM examples: examples showing how ASM can be used
- * Copyright (c) 2000-2007 INRIA, France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,12 +27,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
+import java.io.FileOutputStream;
+
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Label;
-
-import java.io.FileOutputStream;
 
 /**
  * @author Eric Bruneton
@@ -50,7 +50,7 @@ public class Compile extends ClassLoader {
         FileOutputStream fos = new FileOutputStream("Example.class");
         fos.write(b);
         fos.close();
-        Class expClass = main.defineClass("Example", b, 0, b.length);
+        Class<?> expClass = main.defineClass("Example", b, 0, b.length);
         // instantiates this compiled expression class...
         Expression iexp = (Expression) expClass.newInstance();
         // ... and uses it to evaluate exp(0) to exp(9)
@@ -63,7 +63,7 @@ public class Compile extends ClassLoader {
 
 /**
  * An abstract expression.
- * 
+ *
  * @author Eric Bruneton
  */
 abstract class Exp implements Opcodes {
@@ -74,9 +74,8 @@ abstract class Exp implements Opcodes {
      */
     byte[] compile(final String name) {
         // class header
-        String[] itfs = { Expression.class.getName() };
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-        cw.visit(V1_1, ACC_PUBLIC, name, null, "java/lang/Object", itfs);
+        cw.visit(V1_1, ACC_PUBLIC, name, null, "java/lang/Object", new String[] { Expression.class.getName() });
 
         // default public constructor
         MethodVisitor mv = cw.visitMethod(ACC_PUBLIC,
@@ -120,6 +119,7 @@ class Cst extends Exp {
         this.value = value;
     }
 
+    @Override
     void compile(final MethodVisitor mv) {
         // pushes the constant's value onto the stack
         mv.visitLdcInsn(new Integer(value));
@@ -137,6 +137,7 @@ class Var extends Exp {
         this.index = index + 1;
     }
 
+    @Override
     void compile(final MethodVisitor mv) {
         // pushes the 'index' local variable onto the stack
         mv.visitVarInsn(ILOAD, index);
@@ -167,6 +168,7 @@ class Add extends BinaryExp {
         super(e1, e2);
     }
 
+    @Override
     void compile(final MethodVisitor mv) {
         // compiles e1, e2, and adds an instruction to add the two values
         e1.compile(mv);
@@ -184,6 +186,7 @@ class Mul extends BinaryExp {
         super(e1, e2);
     }
 
+    @Override
     void compile(final MethodVisitor mv) {
         // compiles e1, e2, and adds an instruction to multiply the two values
         e1.compile(mv);
@@ -201,6 +204,7 @@ class GT extends BinaryExp {
         super(e1, e2);
     }
 
+    @Override
     void compile(final MethodVisitor mv) {
         // compiles e1, e2, and adds the instructions to compare the two values
         e1.compile(mv);
@@ -227,6 +231,7 @@ class And extends BinaryExp {
         super(e1, e2);
     }
 
+    @Override
     void compile(final MethodVisitor mv) {
         // compiles e1
         e1.compile(mv);
@@ -252,6 +257,7 @@ class Or extends BinaryExp {
         super(e1, e2);
     }
 
+    @Override
     void compile(final MethodVisitor mv) {
         // compiles e1
         e1.compile(mv);
@@ -279,6 +285,7 @@ class Not extends Exp {
         this.e = e;
     }
 
+    @Override
     void compile(final MethodVisitor mv) {
         // computes !e1 by evaluating 1 - e1
         mv.visitLdcInsn(new Integer(1));

@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,17 +33,17 @@ import junit.framework.TestCase;
 
 /**
  * TraceClassAdapter unit tests
- * 
+ *
  * @author Eric Bruneton
  */
 public class TraceClassAdapterUnitTest extends TestCase {
 
     public void testTraceClassVisitor() throws Exception {
         String s = getClass().getName();
-        TraceClassVisitor.main(new String[0]);
-        TraceClassVisitor.main(new String[] { "-debug" });
-        TraceClassVisitor.main(new String[] { s });
-        TraceClassVisitor.main(new String[] { "-debug", s });
-        TraceClassVisitor.main(new String[] { "output/test/cases/Interface.class" });
+        Textifier.main(new String[0]);
+        Textifier.main(new String[] { "-debug" });
+        Textifier.main(new String[] { s });
+        Textifier.main(new String[] { "-debug", s });
+        Textifier.main(new String[] { "output/test/cases/Interface.class" });
     }
 }

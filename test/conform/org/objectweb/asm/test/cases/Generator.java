@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,7 +38,7 @@ import org.objectweb.asm.Opcodes;
 /**
  * Generates classes designed so that the "conform" test suite, applied to these
  * classes, covers all the ASM code base.
- * 
+ *
  * @author Eric Bruneton
  */
 public class Generator implements Opcodes {
@@ -54,7 +54,9 @@ public class Generator implements Opcodes {
             new Interface(),
             new JSR(),
             new Outer(),
-            new Wide() };
+            new Wide(),
+            new InvokeDynamic()
+        };
         for (int i = 0; i < generators.length; ++i) {
             generators[i].generate(args[0]);
         }
@@ -69,7 +71,9 @@ public class Generator implements Opcodes {
         final byte[] clazz) throws IOException
     {
         File f = new File(new File(dir), path);
-        f.getParentFile().mkdirs();
+        if (!f.getParentFile().exists() && !f.getParentFile().mkdirs()) {
+            throw new IOException("Cannot create directory " + f.getParentFile());
+        }
         FileOutputStream o = new FileOutputStream(f);
         o.write(clazz);
         o.close();

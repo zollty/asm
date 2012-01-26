@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,13 +29,14 @@
  */
 package org.objectweb.asm.tree;
 
-import org.objectweb.asm.Opcodes;
-
 import junit.framework.TestCase;
+
+import org.objectweb.asm.Handle;
+import org.objectweb.asm.Opcodes;
 
 /**
  * ClassNode unit tests.
- * 
+ *
  * @author Eric Bruneton
  */
 public class ClassNodeUnitTest extends TestCase implements Opcodes {
@@ -89,6 +90,18 @@ public class ClassNodeUnitTest extends TestCase implements Opcodes {
         assertEquals(AbstractInsnNode.METHOD_INSN, mn.getType());
     }
 
+    public void testInvokeDynamicInsnNode() {
+        Handle bsm = new Handle(Opcodes.H_INVOKESTATIC, "owner", "name", "()V");
+        InvokeDynamicInsnNode mn = new InvokeDynamicInsnNode(
+                "name",
+                "()V",
+                bsm,
+                new Object[0]);
+
+        assertEquals(INVOKEDYNAMIC, mn.getOpcode());
+        assertEquals(AbstractInsnNode.INVOKE_DYNAMIC_INSN, mn.getType());
+    }
+
     public void testJumpInsnNode() {
         JumpInsnNode jn = new JumpInsnNode(GOTO, new LabelNode());
         jn.setOpcode(IFEQ);
@@ -100,6 +113,9 @@ public class ClassNodeUnitTest extends TestCase implements Opcodes {
         LabelNode ln = new LabelNode();
         assertEquals(AbstractInsnNode.LABEL, ln.getType());
         assertTrue(ln.getLabel() != null);
+        // dummy assignment to instruct FindBugs that Label.info can
+        // reference other objects than LabelNode instances
+        ln.getLabel().info = new Object();
     }
 
     public void testIincInsnNode() {
@@ -118,7 +134,7 @@ public class ClassNodeUnitTest extends TestCase implements Opcodes {
     }
 
     public void testTableSwitchInsnNode() {
-        TableSwitchInsnNode tsn = new TableSwitchInsnNode(0, 1, null, null);
+        TableSwitchInsnNode tsn = new TableSwitchInsnNode(0, 1, null, (LabelNode[])null);
         assertEquals(AbstractInsnNode.TABLESWITCH_INSN, tsn.getType());
     }
 

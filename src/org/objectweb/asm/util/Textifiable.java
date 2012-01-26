@@ -1,6 +1,6 @@
-/***
+/**
  * ASM: a very small and fast Java bytecode manipulation framework
- * Copyright (c) 2000-2007 INRIA, France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,22 +29,26 @@
  */
 package org.objectweb.asm.util;
 
-import org.objectweb.asm.FieldVisitor;
+import java.util.Map;
+
+import org.objectweb.asm.Label;
 
 /**
- * A {@link FieldVisitor} that prints the ASM code that generates the fields it
- * visits.
- * 
- * @author Eric Bruneton
+ * An {@link org.objectweb.asm.Attribute Attribute} that can print a readable
+ * representation of itself.
+ *
+ * Implementations should construct readable output from an attribute data
+ * structure. Such representation could be used in unit test assertions.
+ *
+ * @author Eugene Kuleshov
  */
-public class ASMifierFieldVisitor extends ASMifierAbstractVisitor implements
-        FieldVisitor
-{
+public interface Textifiable {
 
     /**
-     * Constructs a new {@link ASMifierFieldVisitor}.
+     * Build a human readable representation of this attribute.
+     *
+     * @param buf a buffer used for printing Java code.
+     * @param labelNames map of label instances to their names.
      */
-    public ASMifierFieldVisitor() {
-        super("fv");
-    }
+    void textify(StringBuffer buf, Map<Label, String> labelNames);
 }

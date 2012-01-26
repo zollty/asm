@@ -1,6 +1,6 @@
 /***
  * ASM XML Adapter
- * Copyright (c) 2004, Eugene Kuleshov
+ * Copyright (c) 2004-2011, Eugene Kuleshov
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -46,7 +46,7 @@ import org.objectweb.asm.Label;
 
 /**
  * SAXAdapter tests
- * 
+ *
  * @author Eugene Kuleshov
  */
 public class SAXAdapterTest extends AbstractTest {
@@ -55,19 +55,24 @@ public class SAXAdapterTest extends AbstractTest {
         return new SAXAdapterTest().getSuite();
     }
 
+    @Override
     public void test() throws Exception {
         ClassReader cr = new ClassReader(is);
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ClassWriter cw = new ClassWriter(0);
 
         SAXTransformerFactory saxtf = (SAXTransformerFactory) TransformerFactory.newInstance();
         TransformerHandler handler = saxtf.newTransformerHandler();
-        handler.setResult(new SAXResult(new ASMContentHandler(bos, false)));
+        handler.setResult(new SAXResult(new ASMContentHandler(cw)));
         handler.startDocument();
         cr.accept(new SAXClassAdapter(handler, false), 0);
         handler.endDocument();
 
-        ClassWriter cw = new ClassWriter(0);
-        cr.accept(cw, new Attribute[] { new Attribute("Comment") {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        bos.write(cw.toByteArray());
+
+        ClassWriter cw2 = new ClassWriter(0);
+        cr.accept(cw2, new Attribute[] { new Attribute("Comment") {
+            @Override
             protected Attribute read(
                 final ClassReader cr,
                 final int off,
@@ -80,6 +85,7 @@ public class SAXAdapterTest extends AbstractTest {
             }
         },
             new Attribute("CodeComment") {
+                @Override
                 protected Attribute read(
                     final ClassReader cr,
                     final int off,
@@ -92,7 +98,7 @@ public class SAXAdapterTest extends AbstractTest {
                 }
             } }, 0);
 
-        assertEquals(new ClassReader(cw.toByteArray()),
+        assertEquals(new ClassReader(cw2.toByteArray()),
                 new ClassReader(bos.toByteArray()));
     }
 }

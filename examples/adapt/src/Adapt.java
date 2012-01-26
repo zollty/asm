@@ -1,6 +1,6 @@
 /***
  * ASM examples: examples showing how ASM can be used
- * Copyright (c) 2000-2007 INRIA, France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,26 +27,26 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.ClassAdapter;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Method;
+
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.MethodAdapter;
+import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.lang.reflect.Method;
 
 /**
  * @author Eric Bruneton
  */
 public class Adapt extends ClassLoader {
 
-    protected synchronized Class loadClass(
+    @Override
+    protected synchronized Class<?> loadClass(
         final String name,
         final boolean resolve) throws ClassNotFoundException
     {
@@ -80,7 +80,7 @@ public class Adapt extends ClassLoader {
             FileOutputStream fos = new FileOutputStream(resource + ".adapted");
             fos.write(b);
             fos.close();
-        } catch (Exception e) {
+        } catch (IOException e) {
         }
 
         // returns the adapted class
@@ -90,24 +90,25 @@ public class Adapt extends ClassLoader {
     public static void main(final String args[]) throws Exception {
         // loads the application class (in args[0]) with an Adapt class loader
         ClassLoader loader = new Adapt();
-        Class c = loader.loadClass(args[0]);
+        Class<?> c = loader.loadClass(args[0]);
         // calls the 'main' static method of this class with the
         // application arguments (in args[1] ... args[n]) as parameter
-        Method m = c.getMethod("main", new Class[] { String[].class });
+        Method m = c.getMethod("main", new Class<?>[] { String[].class });
         String[] applicationArgs = new String[args.length - 1];
         System.arraycopy(args, 1, applicationArgs, 0, applicationArgs.length);
         m.invoke(null, new Object[] { applicationArgs });
     }
 }
 
-class TraceFieldClassAdapter extends ClassAdapter implements Opcodes {
+class TraceFieldClassAdapter extends ClassVisitor implements Opcodes {
 
     private String owner;
 
     public TraceFieldClassAdapter(final ClassVisitor cv) {
-        super(cv);
+        super(Opcodes.ASM4, cv);
     }
 
+    @Override
     public void visit(
         final int version,
         final int access,
@@ -120,6 +121,7 @@ class TraceFieldClassAdapter extends ClassAdapter implements Opcodes {
         super.visit(version, access, name, signature, superName, interfaces);
     }
 
+    @Override
     public FieldVisitor visitField(
         final int access,
         final String name,
@@ -180,6 +182,7 @@ class TraceFieldClassAdapter extends ClassAdapter implements Opcodes {
         return fv;
     }
 
+    @Override
     public MethodVisitor visitMethod(
         final int access,
         final String name,
@@ -196,15 +199,16 @@ class TraceFieldClassAdapter extends ClassAdapter implements Opcodes {
     }
 }
 
-class TraceFieldCodeAdapter extends MethodAdapter implements Opcodes {
+class TraceFieldCodeAdapter extends MethodVisitor implements Opcodes {
 
     private String owner;
 
     public TraceFieldCodeAdapter(final MethodVisitor mv, final String owner) {
-        super(mv);
+        super(Opcodes.ASM4, mv);
         this.owner = owner;
     }
 
+    @Override
     public void visitFieldInsn(
         final int opcode,
         final String owner,

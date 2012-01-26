@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,23 +37,25 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.util.ASMifiable;
-import org.objectweb.asm.util.Traceable;
+import org.objectweb.asm.util.Textifiable;
 
 /**
  * A non standard attribute used for testing purposes.
- * 
+ *
  * @author Eric Bruneton
  */
-public class Comment extends Attribute implements ASMifiable, Traceable {
+public class Comment extends Attribute implements ASMifiable, Textifiable {
 
     public Comment() {
         super("Comment");
     }
 
+    @Override
     public boolean isUnknown() {
         return false;
     }
 
+    @Override
     protected Attribute read(
         final ClassReader cr,
         final int off,
@@ -66,6 +68,7 @@ public class Comment extends Attribute implements ASMifiable, Traceable {
         return new Comment();
     }
 
+    @Override
     protected ByteVector write(
         final ClassWriter cw,
         final byte[] code,
@@ -79,13 +82,13 @@ public class Comment extends Attribute implements ASMifiable, Traceable {
     public void asmify(
         final StringBuffer buf,
         final String varName,
-        final Map labelNames)
+        final Map<Label, String> labelNames)
     {
         buf.append("Attribute ")
                 .append(varName)
                 .append(" = new org.objectweb.asm.attrs.Comment();");
     }
 
-    public void trace(final StringBuffer buf, final Map labelNames) {
+    public void textify(final StringBuffer buf, final Map<Label, String> labelNames) {
     }
 }

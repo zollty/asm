@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,7 +44,7 @@ import org.objectweb.asm.attrs.Comment;
 
 /**
  * CheckClassAdapter tests.
- * 
+ *
  * @author Eric Bruneton
  */
 public class TraceClassAdapterTest extends AbstractTest {
@@ -53,6 +53,7 @@ public class TraceClassAdapterTest extends AbstractTest {
         return new TraceClassAdapterTest().getSuite();
     }
 
+    @Override
     public void test() throws Exception {
         ClassReader cr = new ClassReader(is);
         ClassWriter cw = new ClassWriter(0);

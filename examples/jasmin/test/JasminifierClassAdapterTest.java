@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -48,7 +48,6 @@ import junit.framework.TestSuite;
 
 import org.objectweb.asm.Attribute;
 import org.objectweb.asm.ByteVector;
-import org.objectweb.asm.ClassAdapter;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -56,10 +55,10 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.util.TraceClassVisitor;
 
-class ClassFilter extends ClassAdapter {
+class ClassFilter extends ClassVisitor {
 
     public ClassFilter() {
-        super(null);
+        super(Opcodes.ASM4, null);
     }
 
     public void setNext(final ClassVisitor cv) {
@@ -73,10 +72,12 @@ class Comment extends Attribute {
         super("Comment");
     }
 
+    @Override
     public boolean isUnknown() {
         return false;
     }
 
+    @Override
     protected Attribute read(
         final ClassReader cr,
         final int off,
@@ -89,6 +90,7 @@ class Comment extends Attribute {
         return new Comment();
     }
 
+    @Override
     protected ByteVector write(
         final ClassWriter cw,
         final byte[] code,
@@ -106,14 +108,17 @@ class CodeComment extends Attribute {
         super("CodeComment");
     }
 
+    @Override
     public boolean isUnknown() {
         return false;
     }
 
+    @Override
     public boolean isCodeAttribute() {
         return true;
     }
 
+    @Override
     protected Attribute read(
         final ClassReader cr,
         final int off,
@@ -125,6 +130,7 @@ class CodeComment extends Attribute {
         return new CodeComment();
     }
 
+    @Override
     protected ByteVector write(
         final ClassWriter cw,
         final byte[] code,
@@ -135,6 +141,7 @@ class CodeComment extends Attribute {
         return new ByteVector();
     }
 
+    @Override
     protected Label[] getLabels() {
         super.getLabels();
         return new Label[] { new Label() };
@@ -182,9 +189,9 @@ public class JasminifierClassAdapterTest extends TestCase {
                 scanDirectory("", f, suite, clazz);
             } else {
                 ZipFile zip = new ZipFile(file);
-                Enumeration entries = zip.entries();
+                Enumeration<? extends ZipEntry> entries = zip.entries();
                 while (entries.hasMoreElements()) {
-                    ZipEntry e = (ZipEntry) entries.nextElement();
+                    ZipEntry e = entries.nextElement();
                     String n = e.getName();
                     String p = n.replace('/', '.');
                 System.out.println(n+" "+clazz);
@@ -263,6 +270,7 @@ public class JasminifierClassAdapterTest extends TestCase {
         }
     }
 
+    @Override
     public String getName() {
         return super.getName() + ": " + n;
     }

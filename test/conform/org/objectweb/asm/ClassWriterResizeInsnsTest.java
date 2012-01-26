@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,9 +35,9 @@ import java.lang.instrument.Instrumentation;
 import java.security.ProtectionDomain;
 import java.util.HashSet;
 
-import org.objectweb.asm.attrs.CodeComment;
-
 import junit.framework.TestSuite;
+
+import org.objectweb.asm.attrs.CodeComment;
 
 public class ClassWriterResizeInsnsTest extends AbstractTest {
 
@@ -49,7 +49,7 @@ public class ClassWriterResizeInsnsTest extends AbstractTest {
             public byte[] transform(
                 final ClassLoader loader,
                 final String className,
-                final Class classBeingRedefined,
+                final Class<?> classBeingRedefined,
                 final ProtectionDomain domain,
                 byte[] b) throws IllegalClassFormatException
             {
@@ -73,38 +73,12 @@ public class ClassWriterResizeInsnsTest extends AbstractTest {
 
     static byte[] transformClass(final byte[] clazz, final int flags) {
         ClassReader cr = new ClassReader(clazz);
-        ClassWriter cw = new ClassWriter(flags) {
-            protected String getCommonSuperClass(
-                final String type1,
-                final String type2)
-            {
-                ClassInfo c, d;
-                try {
-                    c = new ClassInfo(type1, getClass().getClassLoader());
-                    d = new ClassInfo(type2, getClass().getClassLoader());
-                } catch (Throwable e) {
-                    throw new RuntimeException(e);
-                }
-                if (c.isAssignableFrom(d)) {
-                    return type1;
-                }
-                if (d.isAssignableFrom(c)) {
-                    return type2;
-                }
-                if (c.isInterface() || d.isInterface()) {
-                    return "java/lang/Object";
-                } else {
-                    do {
-                        c = c.getSuperclass();
-                    } while (!c.isAssignableFrom(d));
-                    return c.getType().getInternalName();
-                }
-            }
-        };
-        ClassAdapter ca = new ClassAdapter(cw) {
+        ClassWriter cw = new ComputeClassWriter(flags);
+        ClassVisitor ca = new ClassVisitor(Opcodes.ASM4, cw) {
 
             boolean transformed = false;
 
+            @Override
             public void visit(
                 int version,
                 int access,
@@ -114,7 +88,9 @@ public class ClassWriterResizeInsnsTest extends AbstractTest {
                 String[] interfaces)
             {
                 if (flags == ClassWriter.COMPUTE_FRAMES) {
-                    version = Opcodes.V1_6;
+                    version = (version & 0xFFFF) < Opcodes.V1_6
+                            ? Opcodes.V1_6
+                            : version;
                 }
                 super.visit(version,
                         access,
@@ -124,6 +100,7 @@ public class ClassWriterResizeInsnsTest extends AbstractTest {
                         interfaces);
             }
 
+            @Override
             public MethodVisitor visitMethod(
                 final int access,
                 final String name,
@@ -131,19 +108,21 @@ public class ClassWriterResizeInsnsTest extends AbstractTest {
                 final String signature,
                 final String[] exceptions)
             {
-                return new MethodAdapter(cv.visitMethod(access,
+                return new MethodVisitor(Opcodes.ASM4, cv.visitMethod(access,
                         name,
                         desc,
                         signature,
                         exceptions))
                 {
-                    private HashSet labels = new HashSet();
+                    private final HashSet<Label> labels = new HashSet<Label>();
 
+                    @Override
                     public void visitLabel(final Label label) {
                         super.visitLabel(label);
                         labels.add(label);
                     }
 
+                    @Override
                     public void visitJumpInsn(
                         final int opcode,
                         final Label label)
@@ -169,6 +148,7 @@ public class ClassWriterResizeInsnsTest extends AbstractTest {
         return new ClassWriterResizeInsnsTest().getSuite();
     }
 
+    @Override
     public void test() throws Exception {
         try {
             Class.forName(n, true, getClass().getClassLoader());

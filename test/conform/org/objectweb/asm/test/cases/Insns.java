@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,11 +40,12 @@ import org.objectweb.asm.Type;
 /**
  * Generates a class that contain all bytecode instruction types (except JSR and
  * RET). Also covers access flags, signatures, and unicode characters.
- * 
+ *
  * @author Eric Bruneton
  */
 public class Insns extends Generator {
 
+    @Override
     public void generate(final String dir) throws IOException {
         generate(dir, "pkg/Insns.class", dump());
     }
@@ -601,7 +602,7 @@ public class Insns extends Generator {
         Label l2 = new Label();
         Label l3 = new Label();
         mv.visitVarInsn(ILOAD, 1);
-        mv.visitTableSwitchInsn(0, 2, l3, new Label[] { l1, l2, l3 });
+        mv.visitTableSwitchInsn(0, 2, l3/*default*/, l1, l2, l3 );
         mv.visitLabel(l1);
         mv.visitInsn(ICONST_1);
         mv.visitVarInsn(ISTORE, 7);

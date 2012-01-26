@@ -1,6 +1,6 @@
 /***
  * ASM tests
- * Copyright (c) 2002-2005 France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,7 +40,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 /**
  * SourceInterpreter tests.
- * 
+ *
  * @author Eric Bruneton
  */
 public class SourceInterpreterTest extends AbstractTest {
@@ -49,14 +49,15 @@ public class SourceInterpreterTest extends AbstractTest {
         return new SourceInterpreterTest().getSuite();
     }
 
+    @Override
     public void test() throws Exception {
         ClassReader cr = new ClassReader(is);
         ClassNode cn = new ClassNode();
         cr.accept(cn, 0);
-        List methods = cn.methods;
+        List<MethodNode> methods = cn.methods;
         for (int i = 0; i < methods.size(); ++i) {
-            MethodNode method = (MethodNode) methods.get(i);
-            Analyzer a = new Analyzer(new SourceInterpreter());
+            MethodNode method = methods.get(i);
+            Analyzer<?> a = new Analyzer<SourceValue>(new SourceInterpreter());
             a.analyze(cn.name, method);
         }
     }

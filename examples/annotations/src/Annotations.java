@@ -1,6 +1,6 @@
 /***
  * ASM examples: examples showing how ASM can be used
- * Copyright (c) 2000-2007 INRIA, France Telecom
+ * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,11 +33,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.ClassAdapter;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodAdapter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -61,8 +60,9 @@ public class Annotations {
         final String n = Annotations.class.getName();
         final ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         ClassReader cr = new ClassReader(n);
-        cr.accept(new ClassAdapter(cw) {
+        cr.accept(new ClassVisitor(Opcodes.ASM4, cw) {
 
+            @Override
             public MethodVisitor visitMethod(
                 final int access,
                 final String name,
@@ -76,10 +76,11 @@ public class Annotations {
                         desc,
                         signature,
                         exceptions);
-                return new MethodAdapter(v) {
+                return new MethodVisitor(Opcodes.ASM4, v) {
 
-                    private final List params = new ArrayList();
+                    private final List<Integer> params = new ArrayList<Integer>();
 
+                    @Override
                     public AnnotationVisitor visitParameterAnnotation(
                         final int parameter,
                         final String desc,
@@ -95,10 +96,11 @@ public class Annotations {
                         return av;
                     }
 
+                    @Override
                     public void visitCode() {
                         int var = (access & Opcodes.ACC_STATIC) == 0 ? 1 : 0;
                         for (int p = 0; p < params.size(); ++p) {
-                            int param = ((Integer) params.get(p)).intValue();
+                            int param = params.get(p).intValue();
                             for (int i = 0; i < param; ++i) {
                                 var += args[i].getSize();
                             }
@@ -123,8 +125,9 @@ public class Annotations {
             }
         }, 0);
 
-        Class c = new ClassLoader() {
-            public Class loadClass(final String name)
+        Class<?> c = new ClassLoader() {
+            @Override
+            public Class<?> loadClass(final String name)
                     throws ClassNotFoundException
             {
                 if (name.equals(n)) {
@@ -137,7 +140,7 @@ public class Annotations {
 
         System.out.println();
         System.out.println("Calling foo(null) on the transformed class results in an IllegalArgumentException:");
-        Method m = c.getMethod("foo", new Class[] { String.class });
+        Method m = c.getMethod("foo", new Class<?>[] { String.class });
         try {
             m.invoke(null, new Object[] { null });
         } catch (InvocationTargetException e) {
