@@ -181,7 +181,7 @@ public class LocalVariablesSorter extends MethodAdapter {
             Object t = local[number];
             int size = t == Opcodes.LONG || t == Opcodes.DOUBLE ? 2 : 1;
             if (t != Opcodes.TOP) {
-                Type typ;
+                Type typ = OBJECT_TYPE;
                 if (t == Opcodes.INTEGER) {
                     typ = Type.INT_TYPE;
                 } else if (t == Opcodes.FLOAT) {
@@ -190,7 +190,7 @@ public class LocalVariablesSorter extends MethodAdapter {
                     typ = Type.LONG_TYPE;
                 } else if (t == Opcodes.DOUBLE) {
                     typ = Type.DOUBLE_TYPE;
-                } else {
+                } else if (t instanceof String) {
                     typ = Type.getObjectType((String) t);
                 }
                 setFrameLocal(remap(index, typ), t);
@@ -286,7 +286,7 @@ public class LocalVariablesSorter extends MethodAdapter {
     }
 
     private int remap(final int var, final Type type) {
-        if (var < firstLocal) {
+        if (var + type.getSize() <= firstLocal) {
             return var;
         }
         int key = 2 * var + type.getSize() - 1;
