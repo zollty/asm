@@ -41,18 +41,13 @@ import org.objectweb.asm.attrs.CodeComment;
 
 public class ClassWriterResizeInsnsTest extends AbstractTest {
 
-    public static void premain(
-        final String agentArgs,
-        final Instrumentation inst)
-    {
+    public static void premain(final String agentArgs,
+            final Instrumentation inst) {
         inst.addTransformer(new ClassFileTransformer() {
-            public byte[] transform(
-                final ClassLoader loader,
-                final String className,
-                final Class<?> classBeingRedefined,
-                final ProtectionDomain domain,
-                byte[] b) throws IllegalClassFormatException
-            {
+            public byte[] transform(final ClassLoader loader,
+                    final String className, final Class<?> classBeingRedefined,
+                    final ProtectionDomain domain, byte[] b)
+                    throws IllegalClassFormatException {
                 String n = className.replace('/', '.');
                 if (agentArgs.length() == 0 || n.indexOf(agentArgs) != -1) {
                     try {
@@ -74,46 +69,28 @@ public class ClassWriterResizeInsnsTest extends AbstractTest {
     static byte[] transformClass(final byte[] clazz, final int flags) {
         ClassReader cr = new ClassReader(clazz);
         ClassWriter cw = new ComputeClassWriter(flags);
-        ClassVisitor ca = new ClassVisitor(Opcodes.ASM4, cw) {
+        ClassVisitor ca = new ClassVisitor(Opcodes.ASM5, cw) {
 
             boolean transformed = false;
 
             @Override
-            public void visit(
-                int version,
-                int access,
-                String name,
-                String signature,
-                String superName,
-                String[] interfaces)
-            {
+            public void visit(int version, int access, String name,
+                    String signature, String superName, String[] interfaces) {
                 if (flags == ClassWriter.COMPUTE_FRAMES) {
-                    version = (version & 0xFFFF) < Opcodes.V1_6
-                            ? Opcodes.V1_6
+                    // Set V1_7 version to prevent fallback to old verifier.
+                    version = (version & 0xFFFF) < Opcodes.V1_7 ? Opcodes.V1_7
                             : version;
                 }
-                super.visit(version,
-                        access,
-                        name,
-                        signature,
-                        superName,
+                super.visit(version, access, name, signature, superName,
                         interfaces);
             }
 
             @Override
-            public MethodVisitor visitMethod(
-                final int access,
-                final String name,
-                final String desc,
-                final String signature,
-                final String[] exceptions)
-            {
-                return new MethodVisitor(Opcodes.ASM4, cv.visitMethod(access,
-                        name,
-                        desc,
-                        signature,
-                        exceptions))
-                {
+            public MethodVisitor visitMethod(final int access,
+                    final String name, final String desc,
+                    final String signature, final String[] exceptions) {
+                return new MethodVisitor(Opcodes.ASM5, cv.visitMethod(access,
+                        name, desc, signature, exceptions)) {
                     private final HashSet<Label> labels = new HashSet<Label>();
 
                     @Override
@@ -123,10 +100,8 @@ public class ClassWriterResizeInsnsTest extends AbstractTest {
                     }
 
                     @Override
-                    public void visitJumpInsn(
-                        final int opcode,
-                        final Label label)
-                    {
+                    public void visitJumpInsn(final int opcode,
+                            final Label label) {
                         super.visitJumpInsn(opcode, label);
                         if (opcode != Opcodes.GOTO) {
                             if (!transformed && !labels.contains(label)) {
@@ -145,7 +120,9 @@ public class ClassWriterResizeInsnsTest extends AbstractTest {
     }
 
     public static TestSuite suite() throws Exception {
-        return new ClassWriterResizeInsnsTest().getSuite();
+        TestSuite suite = new ClassWriterResizeInsnsTest().getSuite();
+        suite.addTest(new VerifierTest());
+        return suite;
     }
 
     @Override

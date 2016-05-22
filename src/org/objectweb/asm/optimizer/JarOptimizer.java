@@ -55,12 +55,12 @@ import org.objectweb.asm.Opcodes;
 
 /**
  * A Jar file optimizer.
- *
+ * 
  * @author Eric Bruneton
  */
 public class JarOptimizer {
 
-    static final Set<String> API= new HashSet<String>();
+    static final Set<String> API = new HashSet<String>();
     static final Map<String, String> HIERARCHY = new HashMap<String, String>();
     static boolean nodebug = false;
 
@@ -111,6 +111,7 @@ public class JarOptimizer {
             while (e.hasMoreElements()) {
                 ZipEntry ze = e.nextElement();
                 if (ze.isDirectory()) {
+                    out.putNextEntry(ze);
                     continue;
                 }
                 out.putNextEntry(ze);
@@ -145,18 +146,13 @@ public class JarOptimizer {
         String owner;
 
         public ClassDump() {
-            super(Opcodes.ASM4);
+            super(Opcodes.ASM5);
         }
 
         @Override
-        public void visit(
-            final int version,
-            final int access,
-            final String name,
-            final String signature,
-            final String superName,
-            final String[] interfaces)
-        {
+        public void visit(final int version, final int access,
+                final String name, final String signature,
+                final String superName, final String[] interfaces) {
             owner = name;
             if (owner.startsWith("java/")) {
                 System.out.println("class " + name + ' ' + superName);
@@ -164,13 +160,8 @@ public class JarOptimizer {
         }
 
         @Override
-        public FieldVisitor visitField(
-            final int access,
-            final String name,
-            final String desc,
-            final String signature,
-            final Object value)
-        {
+        public FieldVisitor visitField(final int access, final String name,
+                final String desc, final String signature, final Object value) {
             if (owner.startsWith("java/")) {
                 System.out.println(owner + ' ' + name);
             }
@@ -178,13 +169,9 @@ public class JarOptimizer {
         }
 
         @Override
-        public MethodVisitor visitMethod(
-            final int access,
-            final String name,
-            final String desc,
-            final String signature,
-            final String[] exceptions)
-        {
+        public MethodVisitor visitMethod(final int access, final String name,
+                final String desc, final String signature,
+                final String[] exceptions) {
             if (owner.startsWith("java/")) {
                 System.out.println(owner + ' ' + name + desc);
             }
@@ -199,48 +186,32 @@ public class JarOptimizer {
         String method;
 
         public ClassVerifier() {
-            super(Opcodes.ASM4);
+            super(Opcodes.ASM5);
         }
 
         @Override
-        public void visit(
-            final int version,
-            final int access,
-            final String name,
-            final String signature,
-            final String superName,
-            final String[] interfaces)
-        {
+        public void visit(final int version, final int access,
+                final String name, final String signature,
+                final String superName, final String[] interfaces) {
             owner = name;
         }
 
         @Override
-        public MethodVisitor visitMethod(
-            final int access,
-            final String name,
-            final String desc,
-            final String signature,
-            final String[] exceptions)
-        {
+        public MethodVisitor visitMethod(final int access, final String name,
+                final String desc, final String signature,
+                final String[] exceptions) {
             method = name + desc;
-            return new MethodVisitor(Opcodes.ASM4) {
+            return new MethodVisitor(Opcodes.ASM5) {
                 @Override
-                public void visitFieldInsn(
-                    final int opcode,
-                    final String owner,
-                    final String name,
-                    final String desc)
-                {
+                public void visitFieldInsn(final int opcode,
+                        final String owner, final String name, final String desc) {
                     check(owner, name);
                 }
 
                 @Override
-                public void visitMethodInsn(
-                    final int opcode,
-                    final String owner,
-                    final String name,
-                    final String desc)
-                {
+                public void visitMethodInsn(final int opcode,
+                        final String owner, final String name,
+                        final String desc, final boolean itf) {
                     check(owner, name + desc);
                 }
             };

@@ -40,7 +40,7 @@ import org.objectweb.asm.Opcodes;
 
 /**
  * AnalyzerAdapter tests.
- *
+ * 
  * @author Eric Bruneton
  */
 public class AnalyzerAdapterTest extends AbstractTest {
@@ -63,41 +63,25 @@ public class AnalyzerAdapterTest extends AbstractTest {
             }
         }
         ClassWriter cw = new ClassWriter(0);
-        ClassVisitor cv = new ClassVisitor(Opcodes.ASM4, cw) {
+        ClassVisitor cv = new ClassVisitor(Opcodes.ASM5, cw) {
 
             private String owner;
 
             @Override
-            public void visit(
-                final int version,
-                final int access,
-                final String name,
-                final String signature,
-                final String superName,
-                final String[] interfaces)
-            {
+            public void visit(final int version, final int access,
+                    final String name, final String signature,
+                    final String superName, final String[] interfaces) {
                 owner = name;
-                cv.visit(version,
-                        access,
-                        name,
-                        signature,
-                        superName,
+                cv.visit(version, access, name, signature, superName,
                         interfaces);
             }
 
             @Override
-            public MethodVisitor visitMethod(
-                final int access,
-                final String name,
-                final String desc,
-                final String signature,
-                final String[] exceptions)
-            {
-                MethodVisitor mv = cv.visitMethod(access,
-                        name,
-                        desc,
-                        signature,
-                        exceptions);
+            public MethodVisitor visitMethod(final int access,
+                    final String name, final String desc,
+                    final String signature, final String[] exceptions) {
+                MethodVisitor mv = cv.visitMethod(access, name, desc,
+                        signature, exceptions);
                 return new AnalyzerAdapter(owner, access, name, desc, mv);
             }
         };

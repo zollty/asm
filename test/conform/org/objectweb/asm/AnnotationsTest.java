@@ -33,7 +33,7 @@ import junit.framework.TestSuite;
 
 /**
  * Annotations tests.
- *
+ * 
  * @author Eric Bruneton
  */
 public class AnnotationsTest extends AbstractTest {
@@ -56,7 +56,7 @@ public class AnnotationsTest extends AbstractTest {
     static class EmptyAnnotationVisitor extends AnnotationVisitor {
 
         public EmptyAnnotationVisitor() {
-            super(Opcodes.ASM4);
+            super(Opcodes.ASM5);
         }
 
         @Override
@@ -73,31 +73,27 @@ public class AnnotationsTest extends AbstractTest {
     static class RemoveAnnotationsAdapter1 extends ClassVisitor {
 
         public RemoveAnnotationsAdapter1(final ClassVisitor cv) {
-            super(Opcodes.ASM4, cv);
+            super(Opcodes.ASM5, cv);
         }
 
         @Override
-        public AnnotationVisitor visitAnnotation(
-            final String desc,
-            final boolean visible)
-        {
+        public AnnotationVisitor visitAnnotation(final String desc,
+                final boolean visible) {
             return new EmptyAnnotationVisitor();
         }
 
         @Override
-        public MethodVisitor visitMethod(
-            final int access,
-            final String name,
-            final String desc,
-            final String signature,
-            final String[] exceptions)
-        {
-            return new MethodVisitor(Opcodes.ASM4, cv.visitMethod(access,
-                    name,
-                    desc,
-                    signature,
-                    exceptions))
-            {
+        public AnnotationVisitor visitTypeAnnotation(int typeRef,
+                TypePath typePath, String desc, boolean visible) {
+            return new EmptyAnnotationVisitor();
+        }
+
+        @Override
+        public MethodVisitor visitMethod(final int access, final String name,
+                final String desc, final String signature,
+                final String[] exceptions) {
+            return new MethodVisitor(Opcodes.ASM5, cv.visitMethod(access, name,
+                    desc, signature, exceptions)) {
 
                 @Override
                 public AnnotationVisitor visitAnnotationDefault() {
@@ -105,19 +101,39 @@ public class AnnotationsTest extends AbstractTest {
                 }
 
                 @Override
-                public AnnotationVisitor visitAnnotation(
-                    String desc,
-                    boolean visible)
-                {
+                public AnnotationVisitor visitAnnotation(String desc,
+                        boolean visible) {
+                    return new EmptyAnnotationVisitor();
+                }
+
+                @Override
+                public AnnotationVisitor visitTypeAnnotation(int typeRef,
+                        TypePath typePath, String desc, boolean visible) {
                     return new EmptyAnnotationVisitor();
                 }
 
                 @Override
                 public AnnotationVisitor visitParameterAnnotation(
-                    int parameter,
-                    String desc,
-                    boolean visible)
-                {
+                        int parameter, String desc, boolean visible) {
+                    return new EmptyAnnotationVisitor();
+                }
+
+                @Override
+                public AnnotationVisitor visitInsnAnnotation(int typeRef,
+                        TypePath typePath, String desc, boolean visible) {
+                    return new EmptyAnnotationVisitor();
+                }
+
+                @Override
+                public AnnotationVisitor visitTryCatchAnnotation(int typeRef,
+                        TypePath typePath, String desc, boolean visible) {
+                    return new EmptyAnnotationVisitor();
+                }
+
+                @Override
+                public AnnotationVisitor visitLocalVariableAnnotation(
+                        int typeRef, TypePath typePath, Label[] start, Label[] end,
+                        int[] index, String desc, boolean visible) {
                     return new EmptyAnnotationVisitor();
                 }
             };
@@ -127,31 +143,27 @@ public class AnnotationsTest extends AbstractTest {
     static class RemoveAnnotationsAdapter2 extends ClassVisitor {
 
         public RemoveAnnotationsAdapter2(final ClassVisitor cv) {
-            super(Opcodes.ASM4, cv);
+            super(Opcodes.ASM5, cv);
         }
 
         @Override
-        public AnnotationVisitor visitAnnotation(
-            final String desc,
-            final boolean visible)
-        {
+        public AnnotationVisitor visitAnnotation(final String desc,
+                final boolean visible) {
             return null;
         }
 
         @Override
-        public MethodVisitor visitMethod(
-            final int access,
-            final String name,
-            final String desc,
-            final String signature,
-            final String[] exceptions)
-        {
-            return new MethodVisitor(Opcodes.ASM4, cv.visitMethod(access,
-                    name,
-                    desc,
-                    signature,
-                    exceptions))
-            {
+        public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath,
+                String desc, boolean visible) {
+            return null;
+        }
+
+        @Override
+        public MethodVisitor visitMethod(final int access, final String name,
+                final String desc, final String signature,
+                final String[] exceptions) {
+            return new MethodVisitor(Opcodes.ASM5, cv.visitMethod(access, name,
+                    desc, signature, exceptions)) {
 
                 @Override
                 public AnnotationVisitor visitAnnotationDefault() {
@@ -159,19 +171,39 @@ public class AnnotationsTest extends AbstractTest {
                 }
 
                 @Override
-                public AnnotationVisitor visitAnnotation(
-                    String desc,
-                    boolean visible)
-                {
+                public AnnotationVisitor visitAnnotation(String desc,
+                        boolean visible) {
+                    return null;
+                }
+
+                @Override
+                public AnnotationVisitor visitTypeAnnotation(int typeRef,
+                        TypePath typePath, String desc, boolean visible) {
                     return null;
                 }
 
                 @Override
                 public AnnotationVisitor visitParameterAnnotation(
-                    int parameter,
-                    String desc,
-                    boolean visible)
-                {
+                        int parameter, String desc, boolean visible) {
+                    return null;
+                }
+
+                @Override
+                public AnnotationVisitor visitInsnAnnotation(int typeRef,
+                        TypePath typePath, String desc, boolean visible) {
+                    return null;
+                }
+
+                @Override
+                public AnnotationVisitor visitTryCatchAnnotation(int typeRef,
+                        TypePath typePath, String desc, boolean visible) {
+                    return null;
+                }
+
+                @Override
+                public AnnotationVisitor visitLocalVariableAnnotation(
+                        int typeRef, TypePath typePath, Label[] start, Label[] end,
+                        int[] index, String desc, boolean visible) {
                     return null;
                 }
             };

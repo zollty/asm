@@ -41,7 +41,7 @@ import org.objectweb.asm.Opcodes;
 
 /**
  * AdviceAdapter tests.
- *
+ * 
  * @author Eugene Kuleshov
  */
 public class AdviceAdapterTest extends AbstractTest {
@@ -68,26 +68,18 @@ public class AdviceAdapterTest extends AbstractTest {
     static class ReferenceClassAdapter extends ClassVisitor {
 
         public ReferenceClassAdapter(final ClassVisitor cv) {
-            super(Opcodes.ASM4, cv);
+            super(Opcodes.ASM5, cv);
         }
 
         @Override
-        public MethodVisitor visitMethod(
-            final int access,
-            final String name,
-            final String desc,
-            final String signature,
-            final String[] exceptions)
-        {
-            MethodVisitor mv = cv.visitMethod(access,
-                    name,
-                    desc,
-                    signature,
+        public MethodVisitor visitMethod(final int access, final String name,
+                final String desc, final String signature,
+                final String[] exceptions) {
+            MethodVisitor mv = cv.visitMethod(access, name, desc, signature,
                     exceptions);
 
             if (mv == null
-                    || (access & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_NATIVE)) > 0)
-            {
+                    || (access & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_NATIVE)) > 0) {
                 return mv;
             }
 
@@ -98,30 +90,22 @@ public class AdviceAdapterTest extends AbstractTest {
     static class AdviceClassAdapter extends ClassVisitor {
 
         public AdviceClassAdapter(final ClassVisitor cv) {
-            super(Opcodes.ASM4, cv);
+            super(Opcodes.ASM5, cv);
         }
 
         @Override
-        public MethodVisitor visitMethod(
-            final int access,
-            final String name,
-            final String desc,
-            final String signature,
-            final String[] exceptions)
-        {
-            MethodVisitor mv = cv.visitMethod(access,
-                    name,
-                    desc,
-                    signature,
+        public MethodVisitor visitMethod(final int access, final String name,
+                final String desc, final String signature,
+                final String[] exceptions) {
+            MethodVisitor mv = cv.visitMethod(access, name, desc, signature,
                     exceptions);
 
             if (mv == null
-                    || (access & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_NATIVE)) > 0)
-            {
+                    || (access & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_NATIVE)) > 0) {
                 return mv;
             }
 
-            return new AdviceAdapter(Opcodes.ASM4, mv, access, name, desc) {
+            return new AdviceAdapter(Opcodes.ASM5, mv, access, name, desc) {
 
                 @Override
                 protected void onMethodEnter() {

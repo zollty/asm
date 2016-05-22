@@ -38,7 +38,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 /**
  * Analyzer unit tests for methods with JSR instructions.
- *
+ * 
  * @author Eric Bruneton
  */
 public class AnalyzerUnitTest extends ClassWriterComputeMaxsUnitTest {
@@ -55,27 +55,21 @@ public class AnalyzerUnitTest extends ClassWriterComputeMaxsUnitTest {
         cw.visitEnd();
         byte[] b = cw.toByteArray();
         ClassReader cr = new ClassReader(b);
-        cr.accept(new ClassVisitor(Opcodes.ASM4) {
+        cr.accept(new ClassVisitor(Opcodes.ASM5) {
             @Override
-            public MethodVisitor visitMethod(
-                final int access,
-                final String name,
-                final String desc,
-                final String signature,
-                final String[] exceptions)
-            {
+            public MethodVisitor visitMethod(final int access,
+                    final String name, final String desc,
+                    final String signature, final String[] exceptions) {
                 if (name.equals("m")) {
-                    return new MethodNode(access,
-                            name,
-                            desc,
-                            signature,
-                            exceptions)
-                    {
+                    return new MethodNode(Opcodes.ASM5, access, name, desc,
+                            signature, exceptions) {
                         @Override
                         public void visitEnd() {
-                            Analyzer<BasicValue> a = new Analyzer<BasicValue>(new BasicInterpreter());
+                            Analyzer<BasicValue> a = new Analyzer<BasicValue>(
+                                    new BasicInterpreter());
                             try {
-                                Frame<BasicValue>[] frames = a.analyze("C", this);
+                                Frame<BasicValue>[] frames = a.analyze("C",
+                                        this);
                                 int mStack = 0;
                                 int mLocals = 0;
                                 for (int i = 0; i < frames.length; ++i) {

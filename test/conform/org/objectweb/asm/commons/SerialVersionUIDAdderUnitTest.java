@@ -36,32 +36,46 @@ import junit.framework.TestCase;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Opcodes;
+
+class SerialVersionClass implements Serializable {
+    
+    protected final static int aField = 32;
+
+    public static Object[] aMethod() {
+        return null;
+    }
+}
+
+interface SerialVersionInterface extends Serializable {
+    
+    void aMethod(Object[] args);
+}
+
+interface SerialVersionEmptyInterface extends Serializable {
+}
+
+enum SerialVersionEnum {
+    V1, V2, V3
+}
 
 /**
  * Test for the SerialVerionUid computation.
- *
+ * 
  * @author Alexandre Vasseur
  * @author Eric Bruneton
  */
 public class SerialVersionUIDAdderUnitTest extends TestCase implements
-        Serializable
-{
-
-    protected final static int aField = 32;
+        Serializable {
 
     static {
         System.setIn(System.in);
     }
 
-    public Object[] aMethod() {
-        return null;
-    }
-
     private long computeSerialVersionUID(final String className)
-            throws IOException
-    {
+            throws IOException {
         final long[] svuid = new long[1];
-        ClassVisitor cv = new SerialVersionUIDAdder(null) {
+        ClassVisitor cv = new SerialVersionUIDAdder(Opcodes.ASM5, null) {
             @Override
             protected long computeSVUID() throws IOException {
                 svuid[0] = super.computeSVUID();
@@ -72,8 +86,23 @@ public class SerialVersionUIDAdderUnitTest extends TestCase implements
         return svuid[0];
     }
 
-    public void test() throws Throwable {
-        long UID = computeSerialVersionUID(getClass().getName());
-        assertEquals(194753646298127968L, UID);
+    public void testClass() throws Throwable {
+        long UID = computeSerialVersionUID(SerialVersionClass.class.getName());
+        assertEquals(4737241769335595888L, UID);
+    }
+
+    public void testInterface() throws Throwable {
+        long UID = computeSerialVersionUID(SerialVersionInterface.class.getName());
+        assertEquals(-1271936742430161320L, UID);
+    }
+
+    public void testEmptyInterface() throws Throwable {
+        long UID = computeSerialVersionUID(SerialVersionEmptyInterface.class.getName());
+        assertEquals(8675733916152748550L, UID);
+    }
+
+    public void testEnum() throws Throwable {
+        long UID = computeSerialVersionUID(SerialVersionEnum.class.getName());
+        assertEquals(0L, UID);
     }
 }

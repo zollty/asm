@@ -40,7 +40,7 @@ import org.objectweb.asm.Opcodes;
 
 /**
  * InsnList unit tests.
- *
+ * 
  * @author Eric Bruneton
  * @author Eugene Kuleshov
  */
@@ -65,10 +65,8 @@ public class InsnListUnitTest extends TestCase {
         l2.add(in2);
     }
 
-    protected void assertEquals(
-        final AbstractInsnNode[] expected,
-        final AbstractInsnNode[] value)
-    {
+    protected void assertEquals(final AbstractInsnNode[] expected,
+            final AbstractInsnNode[] value) {
         assertEquals(expected.length, value.length);
         for (int i = 0; i < value.length; ++i) {
             assertEquals(expected[i], value[i]);
@@ -124,7 +122,8 @@ public class InsnListUnitTest extends TestCase {
         assertTrue(it.hasNext());
         assertEquals(in2, it.next());
         assertTrue(it.hasNext());
-        it.remove();  // remove in2
+        it.remove(); // remove in2
+        assertTrue(it.hasPrevious());
         assertTrue(it.hasNext());
         assertEquals(insn, it.next());
         assertFalse(it.hasNext());
@@ -212,11 +211,72 @@ public class InsnListUnitTest extends TestCase {
     }
 
     public void testIterator3() {
+        InsnNode insn = new InsnNode(0);
+        l2.add(insn);
+
+        // reverse iteration
+        ListIterator<AbstractInsnNode> it = l2.iterator(3);
+        assertFalse(it.hasNext());
+        assertTrue(it.hasPrevious());
+        assertEquals(insn, it.previous());
+        assertTrue(it.hasPrevious());
+        assertEquals(in2, it.previous());
+        assertTrue(it.hasPrevious());
+        assertEquals(in1, it.previous());
+        assertFalse(it.hasPrevious());
+
+        // reverse iteration with remove()
+        it = l2.iterator(3);
+        assertFalse(it.hasNext());
+        assertTrue(it.hasPrevious());
+        assertEquals(insn, it.previous());
+        it.remove(); // remove insn
+        assertTrue(it.hasPrevious());
+        assertEquals(in2, it.previous());
+        it.remove(); // remove in2
+        assertTrue(it.hasPrevious());
+        assertEquals(in1, it.previous());
+        assertFalse(it.hasPrevious());
+
+        assertEquals(1, l2.size());
+        assertEquals(in1, l2.getFirst());
+    }
+
+    public void testIterator4() {
         try {
             new InsnList().iterator().next();
             fail();
         } catch (NoSuchElementException e) {
         }
+    }
+
+    public void testIterator5() {
+        // Call add() on empty list
+        ListIterator<AbstractInsnNode> it = l1.iterator();
+        it.add(new InsnNode(0));
+        assertEquals(1, l1.size());
+
+        // Call set() at end of list
+        it = l1.iterator();
+        it.next();
+        it.set(new InsnNode(1));
+        assertEquals(1, l1.size());
+        assertEquals(1, l1.get(0).opcode);
+
+        // Call add() at end of list
+        it = l2.iterator();
+        it.next();
+        it.next();
+        it.add(new InsnNode(0));
+        assertEquals(3, l2.size());
+
+        // next() after set(), itself after previous()
+        it = l2.iterator();
+        it.next();
+        it.next();
+        it.previous();
+        it.set(new InsnNode(1));
+        assertEquals(1, it.next().opcode);
     }
 
     public void testInvalidIndexOf() {
@@ -655,7 +715,7 @@ public class InsnListUnitTest extends TestCase {
         l1.add(new InsnNode(77));
 
         final InsnList lst = new InsnList();
-        l1.accept(new MethodVisitor(Opcodes.ASM4) {
+        l1.accept(new MethodVisitor(Opcodes.ASM5) {
             @Override
             public void visitInsn(int opcode) {
                 lst.add(new InsnNode(opcode));
@@ -733,7 +793,8 @@ class CheckedInsnList extends InsnList {
     }
 
     @Override
-    public void insert(final AbstractInsnNode location, final AbstractInsnNode insn) {
+    public void insert(final AbstractInsnNode location,
+            final AbstractInsnNode insn) {
         if (!(contains(location) && insn.index == -1)) {
             throw new IllegalArgumentException();
         }
@@ -749,7 +810,8 @@ class CheckedInsnList extends InsnList {
     }
 
     @Override
-    public void insertBefore(final AbstractInsnNode location, final AbstractInsnNode insn) {
+    public void insertBefore(final AbstractInsnNode location,
+            final AbstractInsnNode insn) {
         if (!(contains(location) && insn.index == -1)) {
             throw new IllegalArgumentException();
         }
@@ -757,8 +819,9 @@ class CheckedInsnList extends InsnList {
     }
 
     @Override
-    public void insertBefore(final AbstractInsnNode location, final InsnList insns) {
-        if (!(contains(location ) && insns != this)) {
+    public void insertBefore(final AbstractInsnNode location,
+            final InsnList insns) {
+        if (!(contains(location) && insns != this)) {
             throw new IllegalArgumentException();
         }
         super.insertBefore(location, insns);

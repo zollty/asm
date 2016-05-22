@@ -41,7 +41,7 @@ import org.objectweb.asm.MethodVisitor;
  * GOTO and IF instructions - these jump instructions are not directly generated
  * in their 'wide' form, but are transformed to this form by the method resizing
  * test). Also covers the V1_2 class version.
- *
+ * 
  * @author Eric Bruneton
  */
 public class Wide extends Generator {
@@ -60,7 +60,8 @@ public class Wide extends Generator {
         mv = cw.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
         mv.visitCode();
         mv.visitVarInsn(ALOAD, 0);
-        mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V");
+        mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V",
+                false);
         for (int i = 0; i < 256; ++i) {
             mv.visitLdcInsn(Integer.toString(i)); // wide form
             mv.visitInsn(POP);

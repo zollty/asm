@@ -34,14 +34,16 @@ import junit.framework.TestCase;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.TypePath;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 
 /**
  * ASMContentHandler unit tests
- *
+ * 
  * @author Eric Bruneton
  */
 public class ASMContentHandlerUnitTest extends TestCase implements Opcodes {
@@ -54,15 +56,13 @@ public class ASMContentHandlerUnitTest extends TestCase implements Opcodes {
 
     @Override
     protected void setUp() throws Exception {
-        h = new ASMContentHandler(new ClassVisitor(Opcodes.ASM4) {
+        h = new ASMContentHandler(new ClassVisitor(Opcodes.ASM5) {
 
-            AnnotationVisitor av = new AnnotationVisitor(Opcodes.ASM4) {
+            AnnotationVisitor av = new AnnotationVisitor(Opcodes.ASM5) {
 
                 @Override
-                public AnnotationVisitor visitAnnotation(
-                    String name,
-                    String desc)
-                {
+                public AnnotationVisitor visitAnnotation(String name,
+                        String desc) {
                     return this;
                 }
 
@@ -73,42 +73,41 @@ public class ASMContentHandlerUnitTest extends TestCase implements Opcodes {
             };
 
             @Override
-            public AnnotationVisitor visitAnnotation(
-                String desc,
-                boolean visible)
-            {
+            public AnnotationVisitor visitAnnotation(String desc,
+                    boolean visible) {
                 return av;
             }
 
             @Override
-            public FieldVisitor visitField(
-                int access,
-                String name,
-                String desc,
-                String signature,
-                Object value)
-            {
-                return new FieldVisitor(Opcodes.ASM4) {
+            public AnnotationVisitor visitTypeAnnotation(int typeRef,
+                    TypePath typePath, String desc, boolean visible) {
+                return av;
+            }
+
+            @Override
+            public FieldVisitor visitField(int access, String name,
+                    String desc, String signature, Object value) {
+                return new FieldVisitor(Opcodes.ASM5) {
 
                     @Override
-                    public AnnotationVisitor visitAnnotation(
-                        String desc,
-                        boolean visible)
-                    {
+                    public AnnotationVisitor visitAnnotation(String desc,
+                            boolean visible) {
                         return av;
                     }
+
+                    @Override
+                    public AnnotationVisitor visitTypeAnnotation(int typeRef,
+                            TypePath typePath, String desc, boolean visible) {
+                        return av;
+                    }
+
                 };
             }
 
             @Override
-            public MethodVisitor visitMethod(
-                int access,
-                String name,
-                String desc,
-                String signature,
-                String[] exceptions)
-            {
-                return new MethodVisitor(Opcodes.ASM4) {
+            public MethodVisitor visitMethod(int access, String name,
+                    String desc, String signature, String[] exceptions) {
+                return new MethodVisitor(Opcodes.ASM5) {
 
                     @Override
                     public AnnotationVisitor visitAnnotationDefault() {
@@ -116,19 +115,41 @@ public class ASMContentHandlerUnitTest extends TestCase implements Opcodes {
                     }
 
                     @Override
-                    public AnnotationVisitor visitAnnotation(
-                        String desc,
-                        boolean visible)
-                    {
+                    public AnnotationVisitor visitAnnotation(String desc,
+                            boolean visible) {
+                        return av;
+                    }
+
+                    @Override
+                    public AnnotationVisitor visitTypeAnnotation(int typeRef,
+                            TypePath typePath, String desc, boolean visible) {
                         return av;
                     }
 
                     @Override
                     public AnnotationVisitor visitParameterAnnotation(
-                        int parameter,
-                        String desc,
-                        boolean visible)
-                    {
+                            int parameter, String desc, boolean visible) {
+                        return av;
+                    }
+
+                    @Override
+                    public AnnotationVisitor visitInsnAnnotation(int typeRef,
+                            TypePath typePath, String desc, boolean visible) {
+                        return av;
+                    }
+
+                    @Override
+                    public AnnotationVisitor visitTryCatchAnnotation(
+                            int typeRef, TypePath typePath, String desc,
+                            boolean visible) {
+                        return av;
+                    }
+
+                    @Override
+                    public AnnotationVisitor visitLocalVariableAnnotation(
+                            int typeRef, TypePath typePath, Label[] start,
+                            Label[] end, int[] index, String desc,
+                            boolean visible) {
                         return av;
                     }
                 };
@@ -142,7 +163,8 @@ public class ASMContentHandlerUnitTest extends TestCase implements Opcodes {
         mv = cv.visitMethod(0, "<init>", "()V", null, null);
         mv.visitCode();
         mv.visitVarInsn(ALOAD, 0);
-        mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V");
+        mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V",
+                false);
     }
 
     public void testInvalidOpcode() {

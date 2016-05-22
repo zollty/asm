@@ -51,7 +51,8 @@ public class CheckClassAdapterUnitTest extends TestCase implements Opcodes {
         String s = getClass().getName();
         CheckClassAdapter.main(new String[0]);
         CheckClassAdapter.main(new String[] { s });
-        CheckClassAdapter.main(new String[] { "output/test/cases/Interface.class" });
+        CheckClassAdapter
+                .main(new String[] { "output/test/cases/Interface.class" });
     }
 
     public void testVerifyValidClass() throws Exception {
@@ -86,12 +87,8 @@ public class CheckClassAdapterUnitTest extends TestCase implements Opcodes {
     public void testIllegalSuperClass() {
         ClassVisitor cv = new CheckClassAdapter(null);
         try {
-            cv.visit(V1_1,
-                    ACC_PUBLIC,
-                    "java/lang/Object",
-                    null,
-                    "java/lang/Object",
-                    null);
+            cv.visit(V1_1, ACC_PUBLIC, "java/lang/Object", null,
+                    "java/lang/Object", null);
             fail();
         } catch (Exception e) {
         }
@@ -118,12 +115,8 @@ public class CheckClassAdapterUnitTest extends TestCase implements Opcodes {
     public void testIllegalClassAccessFlagSet() {
         ClassVisitor cv = new CheckClassAdapter(null);
         try {
-            cv.visit(V1_1,
-                    ACC_FINAL + ACC_ABSTRACT,
-                    "C",
-                    null,
-                    "java/lang/Object",
-                    null);
+            cv.visit(V1_1, ACC_FINAL + ACC_ABSTRACT, "C", null,
+                    "java/lang/Object", null);
             fail();
         } catch (Exception e) {
         }
@@ -319,7 +312,8 @@ public class CheckClassAdapterUnitTest extends TestCase implements Opcodes {
         ClassVisitor cv = new CheckClassAdapter(null);
         cv.visit(V1_1, ACC_PUBLIC, "C", null, "java/lang/Object", null);
         try {
-            cv.visitMethod(ACC_PUBLIC, "m", "()V", "<T::LI.J<*+LA;>;>()V^LA;X", null);
+            cv.visitMethod(ACC_PUBLIC, "m", "()V", "<T::LI.J<*+LA;>;>()V^LA;X",
+                    null);
             fail();
         } catch (Exception e) {
         }
@@ -474,24 +468,17 @@ public class CheckClassAdapterUnitTest extends TestCase implements Opcodes {
     public void testIllegalDebugLabelUse() throws IOException {
         ClassReader cr = new ClassReader("java.lang.Object");
         ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
-        ClassVisitor cv = new ClassVisitor(Opcodes.ASM4, cw) {
+        ClassVisitor cv = new ClassVisitor(Opcodes.ASM5, cw) {
             @Override
-            public MethodVisitor visitMethod(
-                int access,
-                String name,
-                String desc,
-                String signature,
-                String[] exceptions)
-            {
-                final MethodVisitor next = cv.visitMethod(access,
-                        name,
-                        desc,
-                        signature,
-                        exceptions);
+            public MethodVisitor visitMethod(int access, String name,
+                    String desc, String signature, String[] exceptions) {
+                final MethodVisitor next = cv.visitMethod(access, name, desc,
+                        signature, exceptions);
                 if (next == null) {
                     return next;
                 }
-                return new MethodVisitor(Opcodes.ASM4, new CheckMethodAdapter(next)) {
+                return new MethodVisitor(Opcodes.ASM5, new CheckMethodAdapter(
+                        next)) {
                     private Label entryLabel = null;
 
                     @Override
@@ -507,10 +494,8 @@ public class CheckClassAdapterUnitTest extends TestCase implements Opcodes {
                         Label unwindhandler = new Label();
                         mv.visitLabel(unwindhandler);
                         mv.visitInsn(Opcodes.ATHROW); // rethrow
-                        mv.visitTryCatchBlock(entryLabel,
-                                unwindhandler,
-                                unwindhandler,
-                                null);
+                        mv.visitTryCatchBlock(entryLabel, unwindhandler,
+                                unwindhandler, null);
                         mv.visitMaxs(maxStack, maxLocals);
                     }
                 };
@@ -547,7 +532,7 @@ public class CheckClassAdapterUnitTest extends TestCase implements Opcodes {
         MethodVisitor mv = new CheckMethodAdapter(null);
         mv.visitCode();
         try {
-            mv.visitTableSwitchInsn(0, 1, new Label(), (Label[])null);
+            mv.visitTableSwitchInsn(0, 1, new Label(), (Label[]) null);
             fail();
         } catch (Exception e) {
         }
@@ -708,7 +693,7 @@ public class CheckClassAdapterUnitTest extends TestCase implements Opcodes {
         MethodVisitor mv = new CheckMethodAdapter(null);
         mv.visitCode();
         try {
-            mv.visitMethodInsn(INVOKEVIRTUAL, "C", null, "()V");
+            mv.visitMethodInsn(INVOKEVIRTUAL, "C", null, "()V", false);
             fail();
         } catch (Exception e) {
         }
@@ -718,7 +703,7 @@ public class CheckClassAdapterUnitTest extends TestCase implements Opcodes {
         MethodVisitor mv = new CheckMethodAdapter(null);
         mv.visitCode();
         try {
-            mv.visitMethodInsn(INVOKEVIRTUAL, "C", "-", "()V");
+            mv.visitMethodInsn(INVOKEVIRTUAL, "C", "-", "()V", false);
             fail();
         } catch (Exception e) {
         }
@@ -728,7 +713,7 @@ public class CheckClassAdapterUnitTest extends TestCase implements Opcodes {
         MethodVisitor mv = new CheckMethodAdapter(null);
         mv.visitCode();
         try {
-            mv.visitMethodInsn(INVOKEVIRTUAL, "C", "a-", "()V");
+            mv.visitMethodInsn(INVOKEVIRTUAL, "C", "a-", "()V", false);
             fail();
         } catch (Exception e) {
         }
@@ -738,7 +723,7 @@ public class CheckClassAdapterUnitTest extends TestCase implements Opcodes {
         MethodVisitor mv = new CheckMethodAdapter(null);
         mv.visitCode();
         try {
-            mv.visitMethodInsn(INVOKEVIRTUAL, "C", "m", null);
+            mv.visitMethodInsn(INVOKEVIRTUAL, "C", "m", null, false);
             fail();
         } catch (Exception e) {
         }
@@ -748,7 +733,7 @@ public class CheckClassAdapterUnitTest extends TestCase implements Opcodes {
         MethodVisitor mv = new CheckMethodAdapter(null);
         mv.visitCode();
         try {
-            mv.visitMethodInsn(INVOKEVIRTUAL, "C", "m", "I");
+            mv.visitMethodInsn(INVOKEVIRTUAL, "C", "m", "I", false);
             fail();
         } catch (Exception e) {
         }
@@ -758,7 +743,7 @@ public class CheckClassAdapterUnitTest extends TestCase implements Opcodes {
         MethodVisitor mv = new CheckMethodAdapter(null);
         mv.visitCode();
         try {
-            mv.visitMethodInsn(INVOKEVIRTUAL, "C", "m", "(V)V");
+            mv.visitMethodInsn(INVOKEVIRTUAL, "C", "m", "(V)V", false);
             fail();
         } catch (Exception e) {
         }
@@ -768,7 +753,27 @@ public class CheckClassAdapterUnitTest extends TestCase implements Opcodes {
         MethodVisitor mv = new CheckMethodAdapter(null);
         mv.visitCode();
         try {
-            mv.visitMethodInsn(INVOKEVIRTUAL, "C", "m", "()VV");
+            mv.visitMethodInsn(INVOKEVIRTUAL, "C", "m", "()VV", false);
+            fail();
+        } catch (Exception e) {
+        }
+    }
+
+    public void testIllegalMethodInsnItf() {
+        MethodVisitor mv = new CheckMethodAdapter(null);
+        mv.visitCode();
+        try {
+            mv.visitMethodInsn(INVOKEINTERFACE, "C", "m", "()V", false);
+            fail();
+        } catch (Exception e) {
+        }
+    }
+
+    public void testIllegalMethodInsnItf2() {
+        MethodVisitor mv = new CheckMethodAdapter(null);
+        mv.visitCode();
+        try {
+            mv.visitMethodInsn(INVOKEVIRTUAL, "C", "m", "()V", true);
             fail();
         } catch (Exception e) {
         }
@@ -838,11 +843,8 @@ public class CheckClassAdapterUnitTest extends TestCase implements Opcodes {
     }
 
     public void testIllegalDataflow() {
-        MethodVisitor mv = new CheckMethodAdapter(ACC_PUBLIC,
-                "m",
-                "(I)V",
-                null,
-                new HashMap<Label, Integer>());
+        MethodVisitor mv = new CheckMethodAdapter(ACC_PUBLIC, "m", "(I)V",
+                null, new HashMap<Label, Integer>());
         mv.visitCode();
         mv.visitVarInsn(ILOAD, 1);
         mv.visitInsn(IRETURN);
@@ -855,11 +857,8 @@ public class CheckClassAdapterUnitTest extends TestCase implements Opcodes {
     }
 
     public void testIllegalDataflobjectweb() {
-        MethodVisitor mv = new CheckMethodAdapter(ACC_PUBLIC,
-                "m",
-                "(I)I",
-                null,
-                new HashMap<Label, Integer>());
+        MethodVisitor mv = new CheckMethodAdapter(ACC_PUBLIC, "m", "(I)I",
+                null, new HashMap<Label, Integer>());
         mv.visitCode();
         mv.visitInsn(RETURN);
         mv.visitMaxs(0, 2);

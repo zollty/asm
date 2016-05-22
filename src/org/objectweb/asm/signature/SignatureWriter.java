@@ -33,16 +33,16 @@ import org.objectweb.asm.Opcodes;
 
 /**
  * A signature visitor that generates signatures in string format.
- *
+ * 
  * @author Thomas Hallgren
  * @author Eric Bruneton
  */
 public class SignatureWriter extends SignatureVisitor {
 
     /**
-     * Buffer used to construct the signature.
+     * Builder used to construct the signature.
      */
-    private final StringBuffer buf = new StringBuffer();
+    private final StringBuilder buf = new StringBuilder();
 
     /**
      * Indicates if the signature contains formal type parameters.
@@ -66,7 +66,7 @@ public class SignatureWriter extends SignatureVisitor {
      * Constructs a new {@link SignatureWriter} object.
      */
     public SignatureWriter() {
-        super(Opcodes.ASM4);
+        super(Opcodes.ASM5);
     }
 
     // ------------------------------------------------------------------------
@@ -193,7 +193,7 @@ public class SignatureWriter extends SignatureVisitor {
 
     /**
      * Returns the signature that was built by this signature writer.
-     *
+     * 
      * @return the signature that was built by this signature writer.
      */
     @Override

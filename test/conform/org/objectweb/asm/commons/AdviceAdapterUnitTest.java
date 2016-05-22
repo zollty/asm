@@ -42,7 +42,7 @@ import org.objectweb.asm.Opcodes;
 
 /**
  * Simple example of using AdviceAdapter to implement tracing callback
- *
+ * 
  * @author Eugene Kuleshov
  */
 public class AdviceAdapterUnitTest extends AbstractTest {
@@ -69,17 +69,19 @@ public class AdviceAdapterUnitTest extends AbstractTest {
         }
 
         @Override
-        public Class<?> loadClass(final String name) throws ClassNotFoundException
-        {
+        public Class<?> loadClass(final String name)
+                throws ClassNotFoundException {
             if (name.startsWith(prefix)) {
                 try {
                     ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-                    ClassReader cr = new ClassReader(getClass().getResourceAsStream("/"
-                            + name.replace('.', '/') + ".class"));
+                    ClassReader cr = new ClassReader(getClass()
+                            .getResourceAsStream(
+                                    "/" + name.replace('.', '/') + ".class"));
                     cr.accept(new AdviceClassAdapter(cw),
                             ClassReader.EXPAND_FRAMES);
                     byte[] bytecode = cw.toByteArray();
-                    return super.defineClass(name, bytecode, 0, bytecode.length);
+                    return super
+                            .defineClass(name, bytecode, 0, bytecode.length);
                 } catch (IOException ex) {
                     throw new ClassNotFoundException("Load error: "
                             + ex.toString(), ex);
@@ -103,8 +105,8 @@ public class AdviceAdapterUnitTest extends AbstractTest {
         System.err.println(off().append("<").toString());
     }
 
-    private static StringBuffer off() {
-        StringBuffer sb = new StringBuffer();
+    private static StringBuilder off() {
+        StringBuilder sb = new StringBuilder();
         for (int i = 0; i < n; i++) {
             sb.append("  ");
         }
@@ -115,51 +117,37 @@ public class AdviceAdapterUnitTest extends AbstractTest {
         String cname;
 
         public AdviceClassAdapter(final ClassVisitor cv) {
-            super(Opcodes.ASM4, cv);
+            super(Opcodes.ASM5, cv);
         }
 
         @Override
-        public void visit(
-            final int version,
-            final int access,
-            final String name,
-            final String signature,
-            final String superName,
-            final String[] interfaces)
-        {
+        public void visit(final int version, final int access,
+                final String name, final String signature,
+                final String superName, final String[] interfaces) {
             this.cname = name;
             super.visit(version, access, name, signature, superName, interfaces);
         }
 
         @Override
-        public MethodVisitor visitMethod(
-            final int access,
-            final String name,
-            final String desc,
-            final String signature,
-            final String[] exceptions)
-        {
-            MethodVisitor mv = cv.visitMethod(access,
-                    name,
-                    desc,
-                    signature,
+        public MethodVisitor visitMethod(final int access, final String name,
+                final String desc, final String signature,
+                final String[] exceptions) {
+            MethodVisitor mv = cv.visitMethod(access, name, desc, signature,
                     exceptions);
 
             if (mv == null
-                    || (access & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_NATIVE)) > 0)
-            {
+                    || (access & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_NATIVE)) > 0) {
                 return mv;
             }
 
-            return new AdviceAdapter(Opcodes.ASM4, mv, access, name, desc) {
+            return new AdviceAdapter(Opcodes.ASM5, mv, access, name, desc) {
 
                 @Override
                 protected void onMethodEnter() {
                     mv.visitLdcInsn(cname + "." + name + desc);
                     mv.visitMethodInsn(INVOKESTATIC,
                             "org/objectweb/asm/commons/AdviceAdapterUnitTest",
-                            "enter",
-                            "(Ljava/lang/String;)V");
+                            "enter", "(Ljava/lang/String;)V", false);
                 }
 
                 @Override
@@ -167,8 +155,7 @@ public class AdviceAdapterUnitTest extends AbstractTest {
                     mv.visitLdcInsn(cname + "." + name + desc);
                     mv.visitMethodInsn(INVOKESTATIC,
                             "org/objectweb/asm/commons/AdviceAdapterUnitTest",
-                            "exit",
-                            "(Ljava/lang/String;)V");
+                            "exit", "(Ljava/lang/String;)V", false);
                 }
 
             };
