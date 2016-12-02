@@ -26,7 +26,7 @@
   <build>
     <sourceDirectory>${basedir}/src</sourceDirectory>
     <scriptSourceDirectory>${basedir}/archive</scriptSourceDirectory>
-    <testSourceDirectory>${basedir}/test/conform</testSourceDirectory>
+    <testSourceDirectory>${basedir}/zollty/java</testSourceDirectory>
     <outputDirectory>${basedir}/target/classes</outputDirectory>
     <testOutputDirectory>${basedir}/target/test-classes</testOutputDirectory>
     <resources>
@@ -36,7 +36,7 @@
     </resources>
     <testResources>
       <testResource>
-        <directory>${basedir}/test/resources</directory>
+        <directory>${basedir}/zollty/resources</directory>
       </testResource>
     </testResources>
     <directory>${basedir}/target</directory>
