@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+   Licensed under the Apache License, Version 2.0 (the "License").
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   Create by Zollty Tsou (Contact: zollty@163.com, http://blog.zollty.com)
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.objectweb</groupId>
+  <artifactId>asm-examples</artifactId>
+  <packaging>jar</packaging>
+  <version>4.0</version>
+  <name>asm-examples</name>
+  <description>objectweb asm examples.</description>
+  
+
+  <build>
+    <sourceDirectory>${basedir}/src</sourceDirectory>
+    <scriptSourceDirectory>${basedir}/none</scriptSourceDirectory>
+    <testSourceDirectory>${basedir}/test</testSourceDirectory>
+    <outputDirectory>${basedir}/target/classes</outputDirectory>
+    <testOutputDirectory>${basedir}/target/test-classes</testOutputDirectory>
+    <resources>
+      <resource>
+        <directory>${basedir}/resources</directory>
+      </resource>
+    </resources>
+    <testResources>
+      <testResource>
+        <directory>${basedir}/test/resources</directory>
+      </testResource>
+    </testResources>
+    <directory>${basedir}/target</directory>
+
+  </build>
+
+  <dependencies>
+
+    <!-- For Test -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.11</version>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+  
+
+</project>
